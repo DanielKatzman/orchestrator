@@ -1,0 +1,21 @@
+{
+  "schema_version": "orchestrator.compatibility-catalog.v1",
+  "qualified_starting_tuple": {
+    "stage1": "a0e0fae627f16910065471cf1e829bcb1e2a9685",
+    "stage2": "8b095867f1eea7216920196fd36c08a4f57b2820",
+    "stage3": "38bf18a42d0e1f74470f60f137720ae15a6b6e5d",
+    "stage4": "919f206772984798a317b40d53443ded6529ceff"
+  },
+  "evidence": "ORCHESTRATOR_HANDOFF.md and supplied Windows/Ubuntu four-stage CPU receipts; actual image controls are recorded separately",
+  "stage2_packaging_alias": {
+    "original_release": "v1.0.2",
+    "distribution": "2.0.0",
+    "producer_software": "1.0.2",
+    "model_release_manifest_sha256": "0381683f5c8226974d73915b355bdd5936d80707219e7f083dcdf08f1ecfcfbc"
+  },
+  "supported_schemas": {
+    "stage1": "paper-segmentation-manifest-1.0",
+    "stage2": "stage2.edge-hypotheses-manifest.v1",
+    "stage3": "stage3.assembly-evidence.v2"
+  }
+}

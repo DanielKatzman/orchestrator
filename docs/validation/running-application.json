@@ -1,0 +1,208 @@
+{
+  "application_sha256": "63324c34f3734e5dac7231fd796b29e14b4d2bed059e10a4c1b0f1307c5988b7",
+  "at": "2026-10-28T21:44:16.394577+00:00",
+  "attempt": 3,
+  "evidence_unchanged": true,
+  "frontend_files": {
+    "assets/index-B7Oc2pk0.js": "f8330b7242874a7870450ed41188c1ad08d69199542060aa48de639bf483f5e5",
+    "assets/index-cZtZjSxj.css": "7279da193843909da4f15a659d50c935babca962289b24f5616f3e0e04341f26",
+    "index.html": "30fa24b1c00a84fc31db0fad09569b0cef5f6d829a7d2f558f5a4b00058da5ff"
+  },
+  "job_count": 3,
+  "job_id": "edf44696f12640e99f157615c56b7044",
+  "lock_sha256": "789ec2a279499d09a21ac4b560ba6b5d358bd31ddb541d81d1b177a71d5f5c83",
+  "restart_checked_at": "2026-10-28T21:44:31.722584+00:00",
+  "restart_verified": true,
+  "result_manifest_sha256": "45fee7dbd99adb8ab4e483a8b3e17790f00d831b0a571a3ab80381d509e7ac0c",
+  "result_unchanged": true,
+  "reused_bundle_sha256": "83234f8629af5663f4adee77249ac8bffb33623c27af044ca0dcd59df7de63b9",
+  "runtimes": {
+    "app": {
+      "machine": "x86_64",
+      "packages": {
+        "PyYAML": "6.0.3",
+        "annotated-doc": "0.0.5",
+        "annotated-types": "0.8.0",
+        "anyio": "4.15.1",
+        "click": "8.5.0",
+        "fastapi": "0.162.0",
+        "h11": "0.16.0",
+        "idna": "3.20",
+        "opentelemetry-api": "1.45.1",
+        "pillow": "13.0.0",
+        "pip": "25.0.1",
+        "pydantic": "2.14.1",
+        "pydantic_core": "2.50.1",
+        "python-multipart": "0.0.32",
+        "starlette": "1.10.0",
+        "typing-inspection": "0.4.4",
+        "typing_extensions": "4.16.0",
+        "uvicorn": "0.54.0"
+      },
+      "python": "3.12.16 (main, Oct 28 2026, 02:01:35) [GCC 12.2.0]"
+    },
+    "stage12": {
+      "machine": "x86_64",
+      "packages": {
+        "PyYAML": "6.0.3",
+        "flatbuffers": "25.12.19",
+        "networkx": "3.7",
+        "numpy": "2.5.4",
+        "onnxruntime": "1.31.1",
+        "packaging": "26.3",
+        "paper-reconstruction-stage2": "2.0.0",
+        "paper-segmentation-stage": "2.0.0",
+        "pillow": "13.0.0",
+        "pip": "26.2.1",
+        "protobuf": "7.36.2",
+        "psutil": "7.2.2",
+        "pymupdf": "2.0",
+        "pymupdf4llm": "2.0",
+        "pymupdf_layout": "2.0",
+        "scipy": "1.18.1",
+        "tabulate": "0.10.0"
+      },
+      "python": "3.14.8 (main, Oct 21 2026, 01:08:24) [GCC 12.2.0]"
+    },
+    "stage3": {
+      "machine": "x86_64",
+      "packages": {
+        "Jinja2": "3.1.6",
+        "MarkupSafe": "3.0.3",
+        "attrs": "26.1.0",
+        "filelock": "4.2.4",
+        "fsspec": "2026.9.0",
+        "jsonschema": "4.26.0",
+        "jsonschema-specifications": "2025.9.1",
+        "mpmath": "1.3.0",
+        "networkx": "3.7",
+        "numpy": "2.5.3",
+        "paper-reconstruction-contracts": "0.1.0",
+        "paper-reconstruction-stage3": "2.0.0",
+        "pillow": "12.3.0",
+        "pip": "25.0.1",
+        "referencing": "0.37.0",
+        "rpds-py": "2026.9.1",
+        "setuptools": "78.1.0",
+        "sympy": "1.14.0",
+        "threadpoolctl": "3.7.0",
+        "torch": "2.7.1+cpu",
+        "typing_extensions": "4.16.0"
+      },
+      "python": "3.12.16 (main, Oct 28 2026, 02:01:35) [GCC 12.2.0]"
+    },
+    "stage4": {
+      "machine": "x86_64",
+      "packages": {
+        "attrs": "26.1.0",
+        "jsonschema": "4.26.0",
+        "jsonschema-specifications": "2025.9.1",
+        "numpy": "2.5.4",
+        "paper-reconstruction-contracts": "0.1.0",
+        "paper-reconstruction-stage4": "0.1.0",
+        "pillow": "13.0.0",
+        "pip": "25.0.1",
+        "referencing": "0.37.0",
+        "rpds-py": "2026.9.1",
+        "scipy": "1.18.1",
+        "typing_extensions": "4.16.0"
+      },
+      "python": "3.12.16 (main, Oct 28 2026, 02:01:35) [GCC 12.2.0]"
+    }
+  },
+  "stages": [
+    {
+      "attempt": 3,
+      "job_id": "edf44696f12640e99f157615c56b7044",
+      "phase": "assessment_validation",
+      "receipt": {
+        "log_sha256": "5d8f50455e82a16f8ae9a9bdf1f32a44c91656fc89bf23fe679bc60eccbefcc2",
+        "returncode": 0,
+        "seconds": 1.261
+      },
+      "status": "ready"
+    },
+    {
+      "attempt": 3,
+      "job_id": "edf44696f12640e99f157615c56b7044",
+      "phase": "boundary",
+      "receipt": {
+        "evidence_attempt": 2
+      },
+      "status": "reused"
+    },
+    {
+      "attempt": 3,
+      "job_id": "edf44696f12640e99f157615c56b7044",
+      "phase": "bundle_validation",
+      "receipt": {
+        "log_sha256": "eee7f916159cb2ccaff3be93cdecab5f9f1776fef285fffcb091651270e9d7f3",
+        "returncode": 0,
+        "seconds": 1.026
+      },
+      "status": "ready"
+    },
+    {
+      "attempt": 3,
+      "job_id": "edf44696f12640e99f157615c56b7044",
+      "phase": "inventory",
+      "receipt": {
+        "log_sha256": "668f98359b6685dd988068b98c984f6a096f8bec549827b55bb994b0b6d03d2c",
+        "returncode": 0,
+        "seconds": 1.853
+      },
+      "status": "ready"
+    },
+    {
+      "attempt": 3,
+      "job_id": "edf44696f12640e99f157615c56b7044",
+      "phase": "stage1",
+      "receipt": {
+        "evidence_attempt": 2
+      },
+      "status": "reused"
+    },
+    {
+      "attempt": 3,
+      "job_id": "edf44696f12640e99f157615c56b7044",
+      "phase": "stage2",
+      "receipt": {
+        "evidence_attempt": 2
+      },
+      "status": "reused"
+    },
+    {
+      "attempt": 3,
+      "job_id": "edf44696f12640e99f157615c56b7044",
+      "phase": "stage3",
+      "receipt": {
+        "evidence_attempt": 2
+      },
+      "status": "reused"
+    },
+    {
+      "attempt": 3,
+      "job_id": "edf44696f12640e99f157615c56b7044",
+      "phase": "stage4",
+      "receipt": {
+        "log_sha256": "574186873d03d36f2b3c61259cdae73c5ae316998e9eb3d52c81a8cfb2b5b47a",
+        "returncode": 0,
+        "seconds": 30.132
+      },
+      "status": "ready"
+    }
+  ],
+  "state": "completed",
+  "summary": {
+    "assessment": "supported",
+    "assessment_manifest_sha256": "7930f8f4b5f00a1637b2f6ca812f8cf016366caf15a304859b8f977af9bccf06",
+    "connected": true,
+    "joins": 3,
+    "outcome": "supported",
+    "pieces": 4,
+    "reason_codes": [],
+    "result_sha256": "92b87286b12d3e10b9c9b170ffb2094a414ba3fddc078b3365b271986c3905df",
+    "run_id": "827f0fd541cdecb2806bae31978965043dd0c28884ccd523986bb09bb42186a2",
+    "termination": "verified_construction"
+  }
+}

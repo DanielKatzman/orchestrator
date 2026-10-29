@@ -1,0 +1,8 @@
+{
+  "stages": {
+    "stage1": {"channel": "pinned", "ref": "a0e0fae627f16910065471cf1e829bcb1e2a9685"},
+    "stage2": {"channel": "pinned", "ref": "8b095867f1eea7216920196fd36c08a4f57b2820"},
+    "stage3": {"channel": "stable"},
+    "stage4": {"channel": "stable"}
+  }
+}

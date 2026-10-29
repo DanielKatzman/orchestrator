@@ -1,0 +1,78 @@
+name: Qualify and publish container
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      IMAGE: ghcr.io/danielkatzman/orchestrator
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Check release version
+        run: |
+          python3 - <<'PY'
+          import os, re, tomllib
+          from pathlib import Path
+          version = tomllib.loads(Path("pyproject.toml").read_text())["project"]["version"]
+          assert re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version), "Expected a stable version"
+          if os.environ["GITHUB_REF_TYPE"] == "tag":
+              assert os.environ["GITHUB_REF_NAME"] == "v" + version, "Tag must match project version"
+          assert "orchestrator:" + version in Path("compose.release.yaml").read_text(), "Update the teammate image version"
+          with open(os.environ["GITHUB_ENV"], "a") as out:
+              out.write("RELEASE_VERSION=" + version + "\n")
+          PY
+
+      - name: Run application and compatibility tests
+        run: |
+          python3 -m venv "$RUNNER_TEMP/paper-tests"
+          "$RUNNER_TEMP/paper-tests/bin/python" -m pip install -r requirements.txt -e '.[test]'
+          "$RUNNER_TEMP/paper-tests/bin/python" -m pytest -q
+
+      - name: Build and qualify all four real stages offline
+        run: bash scripts/build.sh
+
+      - name: Sign in to GitHub Container Registry
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+
+      - name: Publish qualified version and latest
+        run: |
+          docker tag paper-orchestrator:local "$IMAGE:$RELEASE_VERSION"
+          docker tag paper-orchestrator:local "$IMAGE:latest"
+          docker push "$IMAGE:$RELEASE_VERSION"
+          docker push "$IMAGE:latest"
+          docker buildx imagetools inspect "$IMAGE:$RELEASE_VERSION" > artifacts/registry-image.txt
+          {
+            echo "Published \`$IMAGE:$RELEASE_VERSION\` after both offline controls passed."
+            echo '```'
+            cat artifacts/registry-image.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Retain qualification receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: qualification-${{ github.sha }}
+          path: |
+            artifacts/image-*.json
+            artifacts/pipeline.previous-*.lock.json
+            artifacts/registry-image.txt
+            artifacts/paper-control-*/qualification*.json
+          if-no-files-found: warn
+          retention-days: 30

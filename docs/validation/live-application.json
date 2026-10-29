@@ -1,0 +1,125 @@
+{
+  "assembly_only_verified": true,
+  "at": "2026-10-28T21:25:23.520462+00:00",
+  "attempt": 3,
+  "browser_editor": {
+    "approved_drafts": 1,
+    "desktop_canvas_wh": [
+      739,
+      510
+    ],
+    "disconnected_correction_rejected": true,
+    "job_id": "38d744ec6d77404396fd8f111d7f6923",
+    "narrow_canvas_wh": [
+      610,
+      400
+    ],
+    "native_mask_size_wh": [
+      660,
+      820
+    ],
+    "undo_saved_pixels_identical": true
+  },
+  "export_bytes": 5142949,
+  "export_files": 230,
+  "export_valid": true,
+  "job_id": "afde1ad2ebca4f51a6c5ad63bacaf3ed",
+  "restart_checked_at": "2026-10-28T21:31:20.690930+00:00",
+  "restart_verified": true,
+  "result_manifest_sha256": "1f17e47ee42f1f20b797cc2d6207e93c8751d271960cd768aad67489215bbf60",
+  "review_draft_persisted": true,
+  "stages": [
+    {
+      "attempt": 3,
+      "job_id": "afde1ad2ebca4f51a6c5ad63bacaf3ed",
+      "phase": "assessment_validation",
+      "receipt": {
+        "log_sha256": "f3b0193f8be25a3ffe1306259123470775fb454c0bc5e1f97bcd66aea234d100",
+        "returncode": 0,
+        "seconds": 1.322
+      },
+      "status": "ready"
+    },
+    {
+      "attempt": 3,
+      "job_id": "afde1ad2ebca4f51a6c5ad63bacaf3ed",
+      "phase": "boundary",
+      "receipt": {
+        "evidence_attempt": 2
+      },
+      "status": "reused"
+    },
+    {
+      "attempt": 3,
+      "job_id": "afde1ad2ebca4f51a6c5ad63bacaf3ed",
+      "phase": "bundle_validation",
+      "receipt": {
+        "log_sha256": "bec3d9c54ee33b9044711b92793957d418b9a5d1f765381aa01a8b08ab0baf04",
+        "returncode": 0,
+        "seconds": 0.839
+      },
+      "status": "ready"
+    },
+    {
+      "attempt": 3,
+      "job_id": "afde1ad2ebca4f51a6c5ad63bacaf3ed",
+      "phase": "inventory",
+      "receipt": {
+        "log_sha256": "fdd0e9e6fda2ed7dea4ca6d955138b9a2d4129711374a62de89a69daf02ae22e",
+        "returncode": 0,
+        "seconds": 1.373
+      },
+      "status": "ready"
+    },
+    {
+      "attempt": 3,
+      "job_id": "afde1ad2ebca4f51a6c5ad63bacaf3ed",
+      "phase": "stage1",
+      "receipt": {
+        "evidence_attempt": 2
+      },
+      "status": "reused"
+    },
+    {
+      "attempt": 3,
+      "job_id": "afde1ad2ebca4f51a6c5ad63bacaf3ed",
+      "phase": "stage2",
+      "receipt": {
+        "evidence_attempt": 2
+      },
+      "status": "reused"
+    },
+    {
+      "attempt": 3,
+      "job_id": "afde1ad2ebca4f51a6c5ad63bacaf3ed",
+      "phase": "stage3",
+      "receipt": {
+        "evidence_attempt": 2
+      },
+      "status": "reused"
+    },
+    {
+      "attempt": 3,
+      "job_id": "afde1ad2ebca4f51a6c5ad63bacaf3ed",
+      "phase": "stage4",
+      "receipt": {
+        "log_sha256": "db44e94a4a2847724311cc3b92bd47d443164159ee8ef48d5a435d976e341c71",
+        "returncode": 0,
+        "seconds": 29.355
+      },
+      "status": "ready"
+    }
+  ],
+  "summary": {
+    "assessment": "supported",
+    "assessment_manifest_sha256": "82c2c6cb6e71af7c9ac058d9e8df47e5485d29518ee896a1851d0bb5159dc0f6",
+    "connected": true,
+    "joins": 3,
+    "outcome": "supported",
+    "pieces": 4,
+    "reason_codes": [],
+    "result_sha256": "f919aaafd3c30fc3c92324e17973f676501f7d09eadfd625668d21f77cbb4676",
+    "run_id": "e107d0f55b8e708be43e3bf99a9676306d5123f1d6cd1d53fb070df077ad4799",
+    "termination": "verified_construction"
+  }
+}

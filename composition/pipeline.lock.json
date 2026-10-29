@@ -1,0 +1,209 @@
+{
+  "boundary_adapter": {
+    "files": {
+      "tools/integration_common.py": "6a730e6e210f6eddfcefef7024e5f2afd4ed77efc5729623981ac7f8d799eab8",
+      "tools/prepare_stage1_for_stage2.py": "6be0a7f92030c00648ab54dd641c8ac547adfd9c4c62914bd6c49b827cdc7d44"
+    },
+    "maximum_removed_fraction": 0.0001,
+    "maximum_removed_pixels": 64,
+    "policy": "bounded-predicted-mask-native-frame.v2",
+    "target_zero_mask_margin_px": 4
+  },
+  "commands": {
+    "stage1": "python -m universal_segmenter.release_cli",
+    "stage2": "python -m paper_reconstruction_stage2.release_cli",
+    "stage3": "python -m paper_reconstruction_stage3_release",
+    "stage4": "python -m paper_reconstruction_stage4"
+  },
+  "components": {
+    "stage1": {
+      "commit": "a0e0fae627f16910065471cf1e829bcb1e2a9685",
+      "compatibility_snapshot": "components/stage1/compatibility.json",
+      "component_software_version": "1.0.0",
+      "constraints_snapshot": "components/stage1/constraints.txt",
+      "distribution_version": "2.0.0",
+      "models": [
+        {
+          "bytes": 56820510,
+          "path": "models/segformer_b1_detail_768_v3.onnx",
+          "sha256": "cbd43f3f305d44c811d70f1ab604c7dbef9d5ddb2eecd9fd0dbe3f52e3345417"
+        }
+      ],
+      "package": {
+        "name": "paper-segmentation-stage",
+        "source_subdirectory": ".",
+        "version": "2.0.0"
+      },
+      "publication": {
+        "kind": "draft_pull_request",
+        "merged": false,
+        "state": "open",
+        "url": "https://github.com/DanielKatzman/paper-segmentation-stage/pull/1",
+        "v2_tag_published": false
+      },
+      "reference": "codex/v2-integration",
+      "repository": "https://github.com/DanielKatzman/paper-segmentation-stage",
+      "runtime_group": "stage12",
+      "source_readme": "https://github.com/DanielKatzman/paper-segmentation-stage/blob/a0e0fae627f16910065471cf1e829bcb1e2a9685/README.md"
+    },
+    "stage2": {
+      "commit": "8b095867f1eea7216920196fd36c08a4f57b2820",
+      "compatibility_snapshot": "components/stage2/compatibility.json",
+      "component_software_version": "1.0.2",
+      "constraints_snapshot": "components/stage2/constraints.txt",
+      "distribution_version": "2.0.0",
+      "models": [
+        {
+          "bytes": 25662051,
+          "path": "models/stage2_boundary_v1.0.0.onnx",
+          "sha256": "3e80716280375146e2ef66942688e2a262e503df1011918caff262f0bae388a4"
+        }
+      ],
+      "package": {
+        "name": "paper-reconstruction-stage2",
+        "source_subdirectory": ".",
+        "version": "2.0.0"
+      },
+      "publication": {
+        "kind": "draft_pull_request",
+        "merged": false,
+        "state": "open",
+        "url": "https://github.com/DanielKatzman/paper-reconstruction-stage2/pull/1",
+        "v2_tag_published": false
+      },
+      "reference": "codex/v2-integration",
+      "repository": "https://github.com/DanielKatzman/paper-reconstruction-stage2",
+      "runtime_group": "stage12",
+      "source_readme": "https://github.com/DanielKatzman/paper-reconstruction-stage2/blob/8b095867f1eea7216920196fd36c08a4f57b2820/README.md"
+    },
+    "stage3": {
+      "commit": "38bf18a42d0e1f74470f60f137720ae15a6b6e5d",
+      "compatibility_snapshot": "components/stage3/compatibility.json",
+      "component_software_version": "0.9.32",
+      "constraints_snapshot": "components/stage3/constraints.txt",
+      "distribution_version": "2.0.0",
+      "model_manifest": {
+        "path": "models/alpha.json",
+        "sha256": "f56fca0f8bc4018eb9fc2337cc2f445bd13caa9d4b2ee129ecf70f7fd2d76d11"
+      },
+      "models": [
+        {
+          "bytes": 1341677,
+          "path": "models/pair_mlp_small.pt",
+          "sha256": "5d47fc1f7249fb72b64252e0a448e08e5cc3f09d751621106cc34562eccdb930"
+        },
+        {
+          "bytes": 1792045,
+          "path": "models/paired_strip_cnn_small.pt",
+          "sha256": "0b26ec36d171bed520062e7cbef2694c30db7b3e3ff37839b8132dcfcdb6bb3e"
+        }
+      ],
+      "package": {
+        "name": "paper-reconstruction-stage3",
+        "source_subdirectory": ".",
+        "version": "2.0.0"
+      },
+      "publication": {
+        "kind": "tagged_release",
+        "url": "https://github.com/DanielKatzman/paper-reconstruction-stage3/releases/tag/v2.0.0"
+      },
+      "reference": "v2.0.0",
+      "repository": "https://github.com/DanielKatzman/paper-reconstruction-stage3",
+      "runtime_group": "stage3",
+      "source_readme": "https://github.com/DanielKatzman/paper-reconstruction-stage3/blob/38bf18a42d0e1f74470f60f137720ae15a6b6e5d/README.md"
+    },
+    "stage4": {
+      "commit": "919f206772984798a317b40d53443ded6529ceff",
+      "compatibility_snapshot": "components/stage4/compatibility.json",
+      "constraints_snapshot": "components/stage4/constraints.txt",
+      "distribution_version": "2.0.5",
+      "implementation_sdk_fingerprint": "6000dccca2004995b02a6b76f21791e5a85b1daabfd235cb755be4761fb69c37",
+      "models": [],
+      "package": {
+        "name": "paper-reconstruction-stage4",
+        "source_subdirectory": "stages/stage4",
+        "version": "0.1.0"
+      },
+      "publication": {
+        "kind": "tagged_release",
+        "url": "https://github.com/DanielKatzman/paper-reconstruction-stage4/releases/tag/v2.0.5"
+      },
+      "reference": "v2.0.5",
+      "repository": "https://github.com/DanielKatzman/paper-reconstruction-stage4",
+      "runtime_group": "stage4",
+      "source_readme": "https://github.com/DanielKatzman/paper-reconstruction-stage4/blob/919f206772984798a317b40d53443ded6529ceff/README.md"
+    }
+  },
+  "contracts": {
+    "stage1": "paper-segmentation-manifest-1.0",
+    "stage2_manifest": "stage2.edge-hypotheses-manifest.v1",
+    "stage2_piece": "stage2.edge-hypotheses.v1",
+    "stage3_evidence": "stage3.assembly-evidence.v2",
+    "stage3_pool_policy": "support-pose-strata.v1",
+    "stage3_working_pool": "stage3.working-pool.v1",
+    "stage4_assessment_manifest": "stage4.assessment-manifest.v1",
+    "stage4_result_manifest": "stage4.result-manifest.v1",
+    "stage4_tested_recovery_request": "stage4.pose-recovery-request.v3",
+    "stage4_tested_result": "stage4.assembly-result.v4"
+  },
+  "known_gaps": [
+    {
+      "action": "Align and qualify the reviewed workflow before enabling it; never relabel bound profiles",
+      "id": "reviewed-mask-provenance-alias",
+      "qualified_shared_value": "segformer_v3_predicted",
+      "stage1_wrapper": "predicted_reviewed",
+      "stage4_consumer": "segformer_v3_reviewed"
+    }
+  ],
+  "purpose": "Qualified starting tuple for a new orchestrator; not an implemented version resolver",
+  "qualification": "provenance/INTEGRATION_VALIDATION.json",
+  "qualified_source_lock": "composition.lock.json",
+  "remote_checked_at_utc": "2026-10-28T09:06:59.829058+00:00",
+  "runtime_groups": {
+    "stage12": {
+      "python": "3.14",
+      "stages": [
+        "stage1",
+        "stage2"
+      ]
+    },
+    "stage3": {
+      "python": "3.12",
+      "stages": [
+        "stage3"
+      ],
+      "torch": "2.7.1+cpu"
+    },
+    "stage4": {
+      "python": "3.12",
+      "stages": [
+        "stage4"
+      ]
+    }
+  },
+  "schema_version": "paper-reconstruction.orchestrator-handoff.v1",
+  "sdk": {
+    "byte_identical_in_stage3_and_stage4": true,
+    "files": {
+      "paper_reconstruction_contracts/__init__.py": "58c8b6c70b53ee79e9107fd8000b2f7a195ca4791afa6ee5c80e5e718503b17a",
+      "paper_reconstruction_contracts/common.py": "4a0c68c590a57627d2c56cd2e362153f7158e260eb3d0d17de4e95376ff0c447",
+      "paper_reconstruction_contracts/geometry.py": "34ba2f8b4eaaf93c228d0410835366a786486a024583732c5b8afc5740f75194",
+      "paper_reconstruction_contracts/reader.py": "204f03416c5fbbb3f3e2e326529aa73b985a40b212d03b491c3cb82614e46aca",
+      "paper_reconstruction_contracts/schemas/bundle.schema.json": "86c45ba529a1b90d8e81ccbdf0b81400ea8c8b68688bc7238ed312886c95899b",
+      "paper_reconstruction_contracts/schemas/hypothesis.schema.json": "ffebebc6a016f591483f1deb247e317cfb1b18e5aa8c3a4f5def13e2bb0abaf5",
+      "paper_reconstruction_contracts/schemas/working_pool.schema.json": "84ff3a03dcc37fe038757cf7e93a652fae5df408a7feb56096af69556f640e05",
+      "paper_reconstruction_contracts/validation.py": "98d81385536efc854b82f48236d2515baa1994d3953ad5a88d7def0f37a0a2a3"
+    },
+    "package": "paper-reconstruction-contracts",
+    "snapshot": "sdk",
+    "version": "0.1.0"
+  },
+  "snapshot_date": "2026-10-28",
+  "target": {
+    "architecture": "amd64",
+    "default_device": "cpu",
+    "deployment": "one modular-monolith container",
+    "initial_concurrent_jobs": 1,
+    "os": "linux"
+  }
+}

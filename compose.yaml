@@ -1,0 +1,22 @@
+name: paper-orchestrator
+services:
+  paper:
+    image: paper-orchestrator:local
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    platform: linux/amd64
+    ports:
+      - "127.0.0.1:${PAPER_PORT:-8000}:8000"
+    volumes:
+      - paper-data:/data
+    environment:
+      PAPER_CPU_THREADS: "${PAPER_CPU_THREADS:-4}"
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m,mode=1777
+    stop_grace_period: 60s
+    restart: unless-stopped
+volumes:
+  paper-data:
+    name: paper-orchestrator-data

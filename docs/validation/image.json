@@ -1,0 +1,108 @@
+[
+    {
+        "Id": "sha256:31787342953b3968d8b26453b40c26e613c7433f5aace95214de2c7830e3647b",
+        "RepoTags": [
+            "paper-orchestrator:candidate-20261028213123"
+        ],
+        "RepoDigests": [
+            "paper-orchestrator@sha256:31787342953b3968d8b26453b40c26e613c7433f5aace95214de2c7830e3647b"
+        ],
+        "Comment": "buildkit.dockerfile.v0",
+        "Created": "2026-10-28T21:31:33.790196003Z",
+        "Config": {
+            "User": "paper",
+            "ExposedPorts": {
+                "8000/tcp": {}
+            },
+            "Env": [
+                "PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "LANG=C.UTF-8",
+                "GPG_KEY=7169605F62C751356D054A26A821E680E5FA6305",
+                "PYTHON_VERSION=3.12.16",
+                "PYTHON_SHA256=b5796915dc45ff745cfb4e990a7e7c93d6f546328a102ce31448d69ebc37575c",
+                "LD_LIBRARY_PATH=/opt/python314/lib",
+                "PYTHONUTF8=1",
+                "PYTHONUNBUFFERED=1",
+                "PYTHONDONTWRITEBYTECODE=1",
+                "PAPER_DATA=/data",
+                "PAPER_COMPONENTS=/opt/components",
+                "OMP_NUM_THREADS=4",
+                "OPENBLAS_NUM_THREADS=4"
+            ],
+            "Entrypoint": [
+                "/usr/bin/tini",
+                "--",
+                "/opt/venvs/app/bin/python",
+                "-m",
+                "app.supervisor"
+            ],
+            "WorkingDir": "/app",
+            "Healthcheck": {
+                "Test": [
+                    "CMD-SHELL",
+                    "/opt/venvs/app/bin/python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/readyz',timeout=3)\""
+                ],
+                "Interval": 15000000000,
+                "Timeout": 5000000000,
+                "StartPeriod": 20000000000
+            }
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 667156131,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:44a87794b739d471ec360bec56cc0ceac640d06bbf579ee7d9061a0b88d09818",
+                "sha256:576179aecba1384366d23a3e2b732dfd408128a7d2dd1f068d894730362e7947",
+                "sha256:8ed4cbb16557f194937089b065970b4bd118ed82d749a9e1d56261a930488b60",
+                "sha256:f8ff5ead77b71a3abea55b349b2f7acd000ef0a705870552e8b35720dd69145f",
+                "sha256:a408f25bbd3d1297b134054bd9109dd55245b13656822db4333c8a4a9292dc11",
+                "sha256:1c8172ea1b5c1d460576342f99c5a1efd702bcbc57566260754d79a0b706ec51",
+                "sha256:0dbd72f62507efb3c9933d388a7331a12f986c2a60626f982ba7ec7d3b797f28",
+                "sha256:442a9f5261a4ce14c08539919e583cb3b09e757b3cf615e786cc901ac5b4aca0",
+                "sha256:fc67534a1d261e43d117f135651bad3726db8e29e0c98a28009cddf8fb2a128c",
+                "sha256:942f1942a011fdf5ba559cee7e482a037a01fe1f1c13715c256bd93daf9ac9ab",
+                "sha256:af7154194ae6a6dadc932e97a8c3142f8638d31437287d6211606cfd1e82b3ac",
+                "sha256:f620ec5ae778c689a1d09a09e357beef800cc143552d25f6d4fad2e75efd5472",
+                "sha256:9d5539ed6e855f75610c007c3135835b23515314e1d7d2de25359a108b3043d9",
+                "sha256:807feb6aef85e5b30c70a824ef7be8b24921699b9288d6bc3f8b0c5d61822814",
+                "sha256:39a08fa32c01d49d46767b00e569add3337def9fc566bc985e721ea65615adf5",
+                "sha256:f20d9c9e147dbbb615cc797da250d0eb559e64fe44f2e487300171226b07e131",
+                "sha256:c94351fd9cefc31cd9b8107ccc71f5b27d1045250d93e7a8720265cbacc813ec",
+                "sha256:28151db6b52b81c1114f6ecbb9bbadf22a7c68004ac9211381872fb0451539a8",
+                "sha256:c43c89a0f6d2eaec5e007f850b3e1cd61a4a9818b16de98d0b075dd4fe1b78cb",
+                "sha256:a56fd4d6148cabfe2e4c7308541327204ac64a4cd54bdeff680f7650f1702ff7",
+                "sha256:e8dfc8c1a62ae67237033b3b513b27a554973baf7fd80bb166c20d97875a769c",
+                "sha256:e5efc9e441486965d3d099489dfe48655aec8b8a1ac2e031a51e1b9751990b27",
+                "sha256:885f9b6935cb9200ecd363fa2e03b207057d3049ace3fdae14ec7d7e8057e75a",
+                "sha256:189ef0ee1d09bb1eba502cd95e3ca676967a39bd39a10e356951a1802e4e9028",
+                "sha256:ff7b99ac22335ba51d9b7760b4b296e26414a5814e2b8fcaefbaa4a67c4f4ce3",
+                "sha256:ded9e0270d919cfe9be035295a12ae03bdcf664bfcc2d575e6a11c218ad97367",
+                "sha256:74cefe0240f8c4e3ee47b46dc9c47fe90d66258d75e2061d1940ea4f94ca6cbd",
+                "sha256:6e4cf6d0aa9f1e5b358830d82d5c07e7a289f00a3c6a3144856d82436bf62452",
+                "sha256:9bd9a6c2afefdfaea1fa9ab380a3bed5fc0d7e54b92a6744b9974d834ec2374b",
+                "sha256:1d2f103f28ab6a155b08758bce89651f44470897093920027e07aa567b4efecd",
+                "sha256:9d74c2ca1d87e2d65f2b3f6c0ef946f2851ee049c1e9c391d63916955ddf67bb",
+                "sha256:3d295f2db7946927d1b567d95dbf4cc88fd80a33f71b87eb59fab129e1cbf63a",
+                "sha256:3c5b2a0f9c43b5fb7479f06c38613d9b3c66862ff4b48cfc6b5aab5caee247ff"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-10-28T21:31:34.384811568Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:31787342953b3968d8b26453b40c26e613c7433f5aace95214de2c7830e3647b",
+            "size": 856
+        },
+        "Identity": {
+            "Build": [
+                {
+                    "Ref": "5u7mbfoeva14cqu42j5hg8i7y",
+                    "CreatedAt": "2026-10-28T21:31:34.586173918Z"
+                }
+            ]
+        }
+    }
+]

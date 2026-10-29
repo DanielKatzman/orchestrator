@@ -1,0 +1,14 @@
+.git
+.venv
+.local
+.build/*
+!.build/candidate.lock.json
+research
+web/node_modules
+web/dist
+**/__pycache__
+.pytest_cache
+artifacts
+.env
+**/*.tsbuildinfo
+paper-orchestrator.tar

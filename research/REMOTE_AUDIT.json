@@ -1,0 +1,195 @@
+{
+  "checked_at_utc": "2026-10-28T14:52:11.6418441Z",
+  "repositories": [
+    {
+      "repository": "paper-segmentation-stage",
+      "refs": [
+        "ref: refs/heads/main\tHEAD",
+        "16be57bba332b99b9aa81e6f694b83283fc91645\tHEAD",
+        "a0e0fae627f16910065471cf1e829bcb1e2a9685\trefs/heads/codex/v2-integration",
+        "16be57bba332b99b9aa81e6f694b83283fc91645\trefs/heads/main",
+        "16be57bba332b99b9aa81e6f694b83283fc91645\trefs/heads/roei-branch",
+        "a0e0fae627f16910065471cf1e829bcb1e2a9685\trefs/pull/1/head",
+        "af89c8058c802f1643911b7a7373d97dd3729759\trefs/tags/v1.0.0",
+        "4afd4a08e3d4eedd8c7f841eb78ba87e2071aa7f\trefs/tags/v1.0.0^{}",
+        "8e1b77181975bbfa7ff66328d493f43b66bf20bb\trefs/tags/v1.0.1",
+        "16be57bba332b99b9aa81e6f694b83283fc91645\trefs/tags/v1.0.1^{}"
+      ],
+      "releases": [
+        {
+          "tag": "v1.0.0",
+          "draft": false,
+          "prerelease": false,
+          "published_at": "2026-10-03T19:04:36Z",
+          "url": "https://github.com/DanielKatzman/paper-segmentation-stage/releases/tag/v1.0.0",
+          "assets": [
+            {
+              "name": "PaperSegmentationAnnotator-macOS-arm64-build-kit.zip",
+              "bytes": 52701470,
+              "url": "https://github.com/DanielKatzman/paper-segmentation-stage/releases/download/v1.0.0/PaperSegmentationAnnotator-macOS-arm64-build-kit.zip"
+            },
+            {
+              "name": "PaperSegmentationAnnotator-Windows-x86_64.zip",
+              "bytes": 145650189,
+              "url": "https://github.com/DanielKatzman/paper-segmentation-stage/releases/download/v1.0.0/PaperSegmentationAnnotator-Windows-x86_64.zip"
+            }
+          ]
+        }
+      ],
+      "pull_requests": [
+        {
+          "number": 1,
+          "state": "open",
+          "draft": true,
+          "merged_at": null,
+          "head_commit": "a0e0fae627f16910065471cf1e829bcb1e2a9685",
+          "url": "https://github.com/DanielKatzman/paper-segmentation-stage/pull/1"
+        }
+      ]
+    },
+    {
+      "repository": "paper-reconstruction-stage2",
+      "refs": [
+        "ref: refs/heads/main\tHEAD",
+        "84c36bef1669ab421e6907051cf93cb10d087c53\tHEAD",
+        "8b095867f1eea7216920196fd36c08a4f57b2820\trefs/heads/codex/v2-integration",
+        "84c36bef1669ab421e6907051cf93cb10d087c53\trefs/heads/main",
+        "8b095867f1eea7216920196fd36c08a4f57b2820\trefs/pull/1/head",
+        "968ddf0a877e95a8de77b830ca5e9b35ba9bdb78\trefs/tags/v1.0.2",
+        "84c36bef1669ab421e6907051cf93cb10d087c53\trefs/tags/v1.0.2^{}"
+      ],
+      "releases": [],
+      "pull_requests": [
+        {
+          "number": 1,
+          "state": "open",
+          "draft": true,
+          "merged_at": null,
+          "head_commit": "8b095867f1eea7216920196fd36c08a4f57b2820",
+          "url": "https://github.com/DanielKatzman/paper-reconstruction-stage2/pull/1"
+        }
+      ]
+    },
+    {
+      "repository": "paper-reconstruction-stage3",
+      "refs": [
+        "ref: refs/heads/main\tHEAD",
+        "38bf18a42d0e1f74470f60f137720ae15a6b6e5d\tHEAD",
+        "38bf18a42d0e1f74470f60f137720ae15a6b6e5d\trefs/heads/main",
+        "59e6f09263954900cfb0a0cf1acc8f2058af1520\trefs/tags/v2.0.0",
+        "38bf18a42d0e1f74470f60f137720ae15a6b6e5d\trefs/tags/v2.0.0^{}"
+      ],
+      "releases": [
+        {
+          "tag": "v2.0.0",
+          "draft": false,
+          "prerelease": false,
+          "published_at": "2026-10-28T06:19:48Z",
+          "url": "https://github.com/DanielKatzman/paper-reconstruction-stage3/releases/tag/v2.0.0",
+          "assets": [
+            {
+              "name": "compatibility.json",
+              "bytes": 3747,
+              "url": "https://github.com/DanielKatzman/paper-reconstruction-stage3/releases/download/v2.0.0/compatibility.json"
+            },
+            {
+              "name": "paper_reconstruction_contracts-0.1.0-py3-none-any.whl",
+              "bytes": 11394,
+              "url": "https://github.com/DanielKatzman/paper-reconstruction-stage3/releases/download/v2.0.0/paper_reconstruction_contracts-0.1.0-py3-none-any.whl"
+            },
+            {
+              "name": "paper_reconstruction_stage3-2.0.0-py3-none-any.whl",
+              "bytes": 92232,
+              "url": "https://github.com/DanielKatzman/paper-reconstruction-stage3/releases/download/v2.0.0/paper_reconstruction_stage3-2.0.0-py3-none-any.whl"
+            },
+            {
+              "name": "SHA256SUMS.txt",
+              "bytes": 322,
+              "url": "https://github.com/DanielKatzman/paper-reconstruction-stage3/releases/download/v2.0.0/SHA256SUMS.txt"
+            }
+          ]
+        }
+      ],
+      "pull_requests": []
+    },
+    {
+      "repository": "paper-reconstruction-stage4",
+      "refs": [
+        "ref: refs/heads/main\tHEAD",
+        "919f206772984798a317b40d53443ded6529ceff\tHEAD",
+        "919f206772984798a317b40d53443ded6529ceff\trefs/heads/main",
+        "ff8a013150aa5f8eeb90cc07e3e48afcb2d09c57\trefs/tags/v2.0.0",
+        "2a4e876907e402a49acf5f133c82befec0729b20\trefs/tags/v2.0.0^{}",
+        "4a79105db3f214d5090d3f0095324628cf188287\trefs/tags/v2.0.1",
+        "67bfc3e428210782041a81b096ea204c0c25794d\trefs/tags/v2.0.1^{}",
+        "25e1f8b9ad234978afe8aee9656a82e8c4c98f8d\trefs/tags/v2.0.2",
+        "5d0d4760d4d0295ecc37e1ebaa2449caeea9f3f2\trefs/tags/v2.0.2^{}",
+        "e70593e20f42690868d3f8e7068e5ec107038f7a\trefs/tags/v2.0.3",
+        "56ec96ef092bdb6b0cea1025f8e9d73cd8ff1e9c\trefs/tags/v2.0.3^{}",
+        "e0be8c821e642e6da69e3ca195a3cde222d2bf48\trefs/tags/v2.0.4",
+        "b03307e86f0518d132cb9a5edc5baae4ff30abe8\trefs/tags/v2.0.4^{}",
+        "490d9605c0f1b165870dc3524dcb5aff6e929015\trefs/tags/v2.0.5",
+        "919f206772984798a317b40d53443ded6529ceff\trefs/tags/v2.0.5^{}"
+      ],
+      "releases": [
+        {
+          "tag": "v2.0.5",
+          "draft": false,
+          "prerelease": false,
+          "published_at": "2026-10-28T05:45:28Z",
+          "url": "https://github.com/DanielKatzman/paper-reconstruction-stage4/releases/tag/v2.0.5",
+          "assets": []
+        },
+        {
+          "tag": "v2.0.3",
+          "draft": false,
+          "prerelease": false,
+          "published_at": "2026-10-27T19:09:48Z",
+          "url": "https://github.com/DanielKatzman/paper-reconstruction-stage4/releases/tag/v2.0.3",
+          "assets": []
+        },
+        {
+          "tag": "v2.0.2",
+          "draft": false,
+          "prerelease": false,
+          "published_at": "2026-10-27T15:00:01Z",
+          "url": "https://github.com/DanielKatzman/paper-reconstruction-stage4/releases/tag/v2.0.2",
+          "assets": []
+        },
+        {
+          "tag": "v2.0.1",
+          "draft": false,
+          "prerelease": false,
+          "published_at": "2026-10-27T14:08:00Z",
+          "url": "https://github.com/DanielKatzman/paper-reconstruction-stage4/releases/tag/v2.0.1",
+          "assets": []
+        },
+        {
+          "tag": "v2.0.0",
+          "draft": false,
+          "prerelease": false,
+          "published_at": "2026-10-27T09:47:00Z",
+          "url": "https://github.com/DanielKatzman/paper-reconstruction-stage4/releases/tag/v2.0.0",
+          "assets": [
+            {
+              "name": "benchmark-v2.0.0.zip",
+              "bytes": 171300445,
+              "url": "https://github.com/DanielKatzman/paper-reconstruction-stage4/releases/download/v2.0.0/benchmark-v2.0.0.zip"
+            },
+            {
+              "name": "checksums.json",
+              "bytes": 417,
+              "url": "https://github.com/DanielKatzman/paper-reconstruction-stage4/releases/download/v2.0.0/checksums.json"
+            },
+            {
+              "name": "models-v2.0.0.zip",
+              "bytes": 79235835,
+              "url": "https://github.com/DanielKatzman/paper-reconstruction-stage4/releases/download/v2.0.0/models-v2.0.0.zip"
+            }
+          ]
+        }
+      ],
+      "pull_requests": []
+    }
+  ]
+}

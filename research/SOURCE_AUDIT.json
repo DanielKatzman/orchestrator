@@ -1,0 +1,354 @@
+{
+  "checked_at_utc": "2026-10-28T15:01:51.337045+00:00",
+  "scope": "Source and included Stage 3 assets; no inference or Docker qualification",
+  "repositories": {
+    "paper-segmentation-stage": {
+      "commit": "a0e0fae627f16910065471cf1e829bcb1e2a9685",
+      "compatibility": {
+        "acquisition_profile": "Explicit user declaration stage1.capture-profile.v1; not inferred by segmentation",
+        "compatible_pipeline_release": "2.0.5",
+        "component_software_version": "1.0.0",
+        "interface": {
+          "command": "paper-stage1",
+          "commands": [
+            "run",
+            "inspect",
+            "verify"
+          ],
+          "exit_codes": {
+            "failed": 2,
+            "interrupted": 130,
+            "ready": 0,
+            "review_required": 3
+          },
+          "manifest_schema": "paper-segmentation-manifest-1.0",
+          "progress_stream": "stderr",
+          "result_stream": "stdout JSON"
+        },
+        "model": {
+          "path": "models/segformer_b1_detail_768_v3.onnx",
+          "release_manifest_sha256": "d10a6c3ead11b7a3b6d82acf00539cf91a26b9c7461b53fbd18456ff2c0309f5",
+          "sha256": "cbd43f3f305d44c811d70f1ab604c7dbef9d5ddb2eecd9fd0dbe3f52e3345417"
+        },
+        "module": "universal_segmenter",
+        "qualification_scope": "Packaging and interoperability of frozen models; no new accuracy claim",
+        "release_version": "2.0.0",
+        "runtime": {
+          "constraints": "constraints.txt",
+          "default_device": "cpu",
+          "gpu_required": false,
+          "provider": "CPUExecutionProvider",
+          "python_major_minor": "3.14"
+        },
+        "schema_version": "stage1.release-compatibility.v1",
+        "source_inventory": "provenance/runtime_sources.json"
+      },
+      "readmes": {
+        "models/README.md": "0b7dcd29f67415cd3501f63c89ded20471a68376ff38891f7142936539cdffdd",
+        "README.md": "614c9c7221902d3f9c34ae7c2fa269109c2bda292853aa01ca6de6401cca1485"
+      },
+      "inventory_check": {
+        "matched_files": 67,
+        "unhydrated_lfs_assets": [
+          "models/segformer_b1_detail_768_v3.onnx"
+        ],
+        "mismatches": []
+      }
+    },
+    "paper-reconstruction-stage2": {
+      "commit": "8b095867f1eea7216920196fd36c08a4f57b2820",
+      "compatibility": {
+        "compatible_pipeline_release": "2.0.5",
+        "component_software_version": "1.0.2",
+        "downstream": {
+          "model_configuration_unchanged_from": "Stage 2 v1.0.2",
+          "stage3_release": "2.0.0",
+          "stage4_release": "2.0.5"
+        },
+        "interface": {
+          "command": "paper-stage2",
+          "commands": [
+            "run",
+            "inspect",
+            "verify"
+          ],
+          "exit_codes": {
+            "failed": 2,
+            "interrupted": 130,
+            "ready": 0
+          },
+          "manifest_schema": "stage2.edge-hypotheses-manifest.v1",
+          "piece_schema": "stage2.edge-hypotheses.v1",
+          "progress_stream": "stderr",
+          "result_stream": "stdout JSON"
+        },
+        "model": {
+          "path": "models/stage2_boundary_v1.0.0.onnx",
+          "release_manifest_sha256": "0381683f5c8226974d73915b355bdd5936d80707219e7f083dcdf08f1ecfcfbc",
+          "release_version": "1.0.0",
+          "sha256": "3e80716280375146e2ef66942688e2a262e503df1011918caff262f0bae388a4"
+        },
+        "module": "paper_reconstruction_stage2",
+        "qualification_scope": "Packaging and interoperability of frozen models; no new accuracy claim",
+        "release_version": "2.0.0",
+        "runtime": {
+          "constraints": "constraints.txt",
+          "default_device": "cpu",
+          "gpu_required": false,
+          "provider": "CPUExecutionProvider",
+          "python_major_minor": "3.14"
+        },
+        "schema_version": "stage2.release-compatibility.v1",
+        "source_inventory": "provenance/runtime_sources.json"
+      },
+      "readmes": {
+        "examples/README.md": "84b6b0b1af5a0c4c9aa9e168e6e261f0180a98a11bfc90c0fd799c2c76242280",
+        "models/README.md": "029e1ef48538a03a157e38eb020397bbe682ea9e21f7a8af36502358427fbfed",
+        "README.md": "91f788e3f006618ea4accdaf9970979cc3b9fdf16bb3d1cd00ef2f40bd7f5746"
+      },
+      "inventory_check": {
+        "matched_files": 91,
+        "unhydrated_lfs_assets": [
+          "models/stage2_boundary_v1.0.0.onnx"
+        ],
+        "mismatches": []
+      }
+    },
+    "paper-reconstruction-stage3": {
+      "commit": "38bf18a42d0e1f74470f60f137720ae15a6b6e5d",
+      "compatibility": {
+        "acquisition": {
+          "capture_profile_schema": "stage1.capture-profile.v1",
+          "exact_masks_required": false,
+          "motion_model": "rotation_translation",
+          "page_format_dimensions_and_dpi": "not inferred or required by Stage 3",
+          "per_piece_resize": false,
+          "perspective": false,
+          "relative_piece_scale": 1.0,
+          "rotation": "continuous",
+          "shared_native_pixel_scale": true
+        },
+        "coordinates": {
+          "archive_transform": "piece_b native crop to piece_a native crop; canonical piece_a < piece_b",
+          "contour_order": "clockwise_circular",
+          "origin": "top_left",
+          "units": "native crop pixels",
+          "x_axis": "right",
+          "y_axis": "down"
+        },
+        "downstream": {
+          "commit": "919f206772984798a317b40d53443ded6529ceff",
+          "evidence_schema": "stage3.assembly-evidence.v2",
+          "pool_policy": "support-pose-strata.v1",
+          "release_tag": "v2.0.5",
+          "repository": "https://github.com/DanielKatzman/paper-reconstruction-stage4",
+          "sdk_package": "paper-reconstruction-contracts",
+          "sdk_path": "contracts/stage3_to_stage4/v2/sdk",
+          "sdk_version": "0.1.0",
+          "source_sdk_fingerprint": "6000dccca2004995b02a6b76f21791e5a85b1daabfd235cb755be4761fb69c37",
+          "working_pool_schema": "stage3.working-pool.v1"
+        },
+        "interface": {
+          "commands": [
+            "verify",
+            "infer",
+            "pool",
+            "prepare",
+            "inspect"
+          ],
+          "console_script": "paper-stage3",
+          "module": "paper_reconstruction_stage3_release",
+          "prepare_consumer_bundle_path": "bundle",
+          "prepare_native_path": "native",
+          "progress_stream": "stderr",
+          "result_stream": "stdout JSON",
+          "resume": "repeat identical infer/prepare command; committed native caches and identical pooled publication are authenticated"
+        },
+        "models": [
+          {
+            "name": "pair_mlp_small",
+            "path": "models/pair_mlp_small.pt",
+            "sha256": "5d47fc1f7249fb72b64252e0a448e08e5cc3f09d751621106cc34562eccdb930",
+            "size": 1341677
+          },
+          {
+            "name": "paired_strip_cnn_small",
+            "path": "models/paired_strip_cnn_small.pt",
+            "sha256": "0b26ec36d171bed520062e7cbef2694c30db7b3e3ff37839b8132dcfcdb6bb3e",
+            "size": 1792045
+          }
+        ],
+        "qualification_scope": "Integration release of the preserved qualified core, not new training, speed improvements or a new thirty-piece CPU reliability claim",
+        "qualified_runtime": {
+          "algorithm": "stage3.alpha-evidence.v0931",
+          "candidate_implementation_sha256": "6b0ac07074ff3ecf340aa7c30deae6760d8a8cd4807e3dd9b71348d72e86e66a",
+          "component_software_version": "0.9.32",
+          "models_and_inference_policy_changed": false,
+          "source_inventory": "provenance/qualified_sources.json",
+          "variant": "unit-scale-v5"
+        },
+        "release_version": "2.0.0",
+        "repository": "https://github.com/DanielKatzman/paper-reconstruction-stage3",
+        "runtime": {
+          "cuda_optional": true,
+          "default_device": "cpu",
+          "gpu_required": false,
+          "python_major_minor": "3.12",
+          "torch_version": "2.7.1"
+        },
+        "schema_version": "stage3.release-compatibility.v1",
+        "upstream": {
+          "commit": "84c36bef1669ab421e6907051cf93cb10d087c53",
+          "manifest_schema": "stage2.edge-hypotheses-manifest.v1",
+          "model_release_version": "1.0.0",
+          "model_sha256": "3e80716280375146e2ef66942688e2a262e503df1011918caff262f0bae388a4",
+          "piece_schema": "stage2.edge-hypotheses.v1",
+          "release_manifest_sha256": "0381683f5c8226974d73915b355bdd5936d80707219e7f083dcdf08f1ecfcfbc",
+          "release_tag": "v1.0.2",
+          "repository": "https://github.com/DanielKatzman/paper-reconstruction-stage2",
+          "source_checkpoint_sha256": "36dd4eb0f13bc49fc2efc791cca1de03d34997704e11cce5d7cff8a326c1a6fc"
+        }
+      },
+      "readmes": {
+        "contracts/stage3_to_stage4/v2/README.md": "8b719029a22b4cf867893c4aeb7f04103bc4bf8bb417d278d8f5c6f5ffcba1b1",
+        "examples/synthetic_page/README.md": "f00a56bca59f2d0c12a6f5e9de1f88451bf83245412f30f979e8c7332b101a45",
+        "README.md": "b820d0d159371dbc56dbc76ee58ef452947d151f64fbffe069089923afacf918"
+      },
+      "inventory_check": {
+        "matched_files": 48,
+        "unhydrated_lfs_assets": [],
+        "mismatches": []
+      }
+    },
+    "paper-reconstruction-stage4": {
+      "commit": "919f206772984798a317b40d53443ded6529ceff",
+      "compatibility": {
+        "acquisition_profiles": {
+          "capture_quality_repair_policy": "observed-border-angles-and-supported-incumbent-repair.v1",
+          "capture_recovery_policy": "cold-routes-then-persistent-capture-repair.v1",
+          "continuous_rigid_native_policy": "native-contour-observed-rigid-angles.v1",
+          "exact_generator_masks": "stages/stage4/configs/shared_scale_complete_rectangle_v1.json",
+          "native_rotation_validation": "authenticated-proper-rigid-with-declared-rotation-family",
+          "predicted_masks": "stages/stage4/configs/shared_scale_complete_rectangle_predicted_v1.json",
+          "relative_piece_scale": 1.0,
+          "solver_configuration": "stages/stage4/configs/joint_v21_cut_repair_development.json"
+        },
+        "assumptions": {
+          "baseline_mask_mode": "exact_generator_development",
+          "baseline_rotation_family": "quarter_turn",
+          "page": "one_complete_rectangle",
+          "perspective": false,
+          "relative_piece_scale": 1.0
+        },
+        "compatible_model_data_baseline": "2.0.0",
+        "component_inventory_sha256": "394ffdd050ddd29a3367553053de79c24e5cb22cc46c3958036880def2a3465f",
+        "contracts": {
+          "sdk_path": "contracts/sdk",
+          "sdk_software_version": "0.1.0",
+          "stage3_to_stage4_contract_directory": "contracts/sdk/src/paper_reconstruction_contracts/schemas"
+        },
+        "execution": {
+          "cuda_optional": true,
+          "default_device": "cpu",
+          "gpu_required": false,
+          "torch_cpu_wheel_version": "2.7.1"
+        },
+        "release_version": "2.0.5",
+        "schema_version": "paper-reconstruction.release-compatibility.v1",
+        "stages": {
+          "stage1": {
+            "compatible_pipeline_release": "2.0.5",
+            "models": [
+              {
+                "path": "stages/stage1/models/segformer_b1_detail_768_v3.onnx",
+                "sha256": "cbd43f3f305d44c811d70f1ab604c7dbef9d5ddb2eecd9fd0dbe3f52e3345417",
+                "size": 56820510
+              }
+            ],
+            "package_metadata": "stages/stage1/pyproject.toml",
+            "python_major_minor": "3.14",
+            "software_version": "1.0.0",
+            "source_inventory": "provenance/components.json#stage1"
+          },
+          "stage2": {
+            "compatible_pipeline_release": "2.0.5",
+            "models": [
+              {
+                "path": "stages/stage2/models/stage2_boundary_v1.0.0.onnx",
+                "sha256": "3e80716280375146e2ef66942688e2a262e503df1011918caff262f0bae388a4",
+                "size": 25662051
+              }
+            ],
+            "package_metadata": "stages/stage2/pyproject.toml",
+            "python_major_minor": "3.14",
+            "software_version": "1.0.2",
+            "source_inventory": "provenance/components.json#stage2"
+          },
+          "stage3": {
+            "candidate_implementation_sha256": "6b0ac07074ff3ecf340aa7c30deae6760d8a8cd4807e3dd9b71348d72e86e66a",
+            "compatible_pipeline_release": "2.0.5",
+            "models": [
+              {
+                "path": "stages/stage3/models/pair_mlp_small.pt",
+                "sha256": "5d47fc1f7249fb72b64252e0a448e08e5cc3f09d751621106cc34562eccdb930",
+                "size": 1341677
+              },
+              {
+                "path": "stages/stage3/models/paired_strip_cnn_small.pt",
+                "sha256": "0b26ec36d171bed520062e7cbef2694c30db7b3e3ff37839b8132dcfcdb6bb3e",
+                "size": 1792045
+              }
+            ],
+            "package_metadata": "stages/stage3/pyproject.toml",
+            "python_major_minor": "3.12",
+            "software_version": "0.9.32",
+            "source_inventory": "provenance/components.json#stage3"
+          },
+          "stage4": {
+            "compatible_pipeline_release": "2.0.5",
+            "models": [],
+            "package_metadata": "stages/stage4/pyproject.toml",
+            "python_major_minor": "3.12",
+            "software_version": "0.1.0",
+            "source_inventory": "provenance/components.json#stage4",
+            "source_sdk_fingerprint": "6000dccca2004995b02a6b76f21791e5a85b1daabfd235cb755be4761fb69c37"
+          }
+        }
+      },
+      "readmes": {
+        "README.md": "994bf248d2991bbd056ab3679babfb5343c2fbdad0f1a1fabe19712512c1e1ff",
+        "stages/stage1/models/README.md": "0b7dcd29f67415cd3501f63c89ded20471a68376ff38891f7142936539cdffdd",
+        "stages/stage1/README.md": "e225e536afa070d561befe874d7e1eedae07ec5cb456c451d2de226243e90fb7",
+        "stages/stage2/examples/README.md": "84b6b0b1af5a0c4c9aa9e168e6e261f0180a98a11bfc90c0fd799c2c76242280",
+        "stages/stage2/models/README.md": "029e1ef48538a03a157e38eb020397bbe682ea9e21f7a8af36502358427fbfed",
+        "stages/stage2/README.md": "7342374142644e6ccb5625b396ac7f1702f85d04680377088df4af2159f0fd22",
+        "stages/stage3/README.md": "cf3122be2cf1796fbb6fa25f2b6eaf923308015f071ba178a863680e53675caf",
+        "stages/stage4/contracts/README.md": "d4ea9185de55197788e6156c9ec292a8a4e9abbb8ddd8b7d7b4d6b22d1efa223",
+        "stages/stage4/README.md": "4893a7fa3f8609a9cd10b9b6ac995c21bfdedd05792c73e68526e7a75d6fb4d9"
+      },
+      "inventory_check": {
+        "component_source_files": {
+          "stage1": 47,
+          "stage2": 55,
+          "stage3": 36,
+          "stage4": 81
+        },
+        "mismatches": [],
+        "model_payloads_verified": false
+      }
+    }
+  },
+  "sdk": {
+    "byte_identical": true,
+    "files": {
+      "__init__.py": "58c8b6c70b53ee79e9107fd8000b2f7a195ca4791afa6ee5c80e5e718503b17a",
+      "common.py": "4a0c68c590a57627d2c56cd2e362153f7158e260eb3d0d17de4e95376ff0c447",
+      "geometry.py": "34ba2f8b4eaaf93c228d0410835366a786486a024583732c5b8afc5740f75194",
+      "reader.py": "204f03416c5fbbb3f3e2e326529aa73b985a40b212d03b491c3cb82614e46aca",
+      "schemas/bundle.schema.json": "86c45ba529a1b90d8e81ccbdf0b81400ea8c8b68688bc7238ed312886c95899b",
+      "schemas/hypothesis.schema.json": "ffebebc6a016f591483f1deb247e317cfb1b18e5aa8c3a4f5def13e2bb0abaf5",
+      "schemas/working_pool.schema.json": "84ff3a03dcc37fe038757cf7e93a652fae5df408a7feb56096af69556f640e05",
+      "validation.py": "98d81385536efc854b82f48236d2515baa1994d3953ad5a88d7def0f37a0a2a3"
+    }
+  }
+}

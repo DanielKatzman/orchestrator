@@ -6,6 +6,8 @@ One local browser app and one CPU Docker container for the four-stage paper reco
 
 The self-contained Linux amd64 image is published as `ghcr.io/danielkatzman/orchestrator:0.1.0`. It includes all four stages, frozen models, Python runtimes, dependencies and the compiled GUI. Teammates need Docker with Linux containers and a browser; there are no separate model or source installations. Processing works offline after the image has been downloaded.
 
+For the quickest start, download and extract the [starter ZIP from the v0.1.0 release](https://github.com/DanielKatzman/orchestrator/releases/tag/v0.1.0). It includes `compose.yaml`, startup instructions and four generated sample captures. Run `docker compose pull` and `docker compose up -d` from the extracted folder.
+
 Download [compose.release.yaml](https://github.com/DanielKatzman/orchestrator/blob/main/compose.release.yaml) into an empty folder, then run:
 
 ```powershell

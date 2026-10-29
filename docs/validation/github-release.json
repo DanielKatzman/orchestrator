@@ -1,0 +1,34 @@
+{
+  "date": "2026-10-29",
+  "repository": "https://github.com/DanielKatzman/orchestrator",
+  "tag": "v0.1.0",
+  "source_commit": "46fcd6e18340d64a9ec96a2cf30507454ef969dc",
+  "workflow_run": "https://github.com/DanielKatzman/orchestrator/actions/runs/40887781730",
+  "workflow_conclusion": "success",
+  "image": "ghcr.io/danielkatzman/orchestrator:0.1.0",
+  "registry_digest": "sha256:ec6182618418c4e962647802d65294ee29f3a24e3464d748bf2c48d92c99159b",
+  "image_config": "sha256:4fd6834d824a9c4dddb502e15983cce94bc2f816235470b72df4166e40264eb5",
+  "latest_matches_version": true,
+  "platform": "linux/amd64",
+  "application_sha256": "6b363512db1441a157da6f439ff5674e6159d311a8692c3d7c7b1a6e5645da37",
+  "lock_sha256": "789ec2a279499d09a21ac4b560ba6b5d358bd31ddb541d81d1b177a71d5f5c83",
+  "application_tests_passed": 20,
+  "automatic_control": {
+    "status": "passed",
+    "cancellation_resume_verified": true,
+    "pieces": 4,
+    "outcome": "supported",
+    "seconds": 169.451
+  },
+  "reviewed_control": {
+    "status": "passed",
+    "corrected_native_pixels": 1,
+    "pieces": 4,
+    "outcome": "supported",
+    "seconds": 148.959
+  },
+  "controls_external_network": "disabled",
+  "anonymous_manifest_verified": true,
+  "anonymous_full_image_pull_verified": true,
+  "qualification_artifact_id": 12903592829
+}

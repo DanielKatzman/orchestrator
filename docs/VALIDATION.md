@@ -36,3 +36,11 @@ The browser/restart/assembly evidence is in [live-application.json](validation/l
 The final result screen is captured in [reconstruction.jpg](screenshots/reconstruction.jpg).
 
 These controls establish container packaging, stage interoperability, native-mask review, durable coordination, cancellation/recovery and user-interface behavior on the bundled generated page. They do not establish unseen real-photo accuracy, calibrated confidence, 30-piece CPU throughput, native ARM/macOS behavior or GPU support. Broader development/real-input qualification remains distinct. Upstream historical benchmark results were not relabelled as tests of this application.
+
+## Published release — 29 October 2026
+
+Source commit `46fcd6e18340d64a9ec96a2cf30507454ef969dc` is tagged `v0.1.0` in [DanielKatzman/orchestrator](https://github.com/DanielKatzman/orchestrator). The [GitHub release workflow](https://github.com/DanielKatzman/orchestrator/actions/runs/40887781730) passed all 20 tests, built the committed composition on Linux amd64, and passed both real offline controls before publishing `ghcr.io/danielkatzman/orchestrator:0.1.0` and `:latest`.
+
+The registry digest is `sha256:ec6182618418c4e962647802d65294ee29f3a24e3464d748bf2c48d92c99159b`; both tags were independently checked to match. The automatic cancellation/resume control took 169.451 seconds and the corrected-mask control took 148.959 seconds. Both reached supported four-piece results. A complete image pull succeeded using an empty Docker credential configuration, verifying anonymous teammate downloads.
+
+This GitHub-built image is separately qualified from the workstation-built image above; its application/runtime identity is `6b363512db1441a157da6f439ff5674e6159d311a8692c3d7c7b1a6e5645da37`. The current local application and its persistent jobs were left running on their original image. The hosted release summary is [github-release.json](validation/github-release.json); full receipts and image metadata are retained in the workflow qualification artifact.

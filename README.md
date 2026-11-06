@@ -2,19 +2,19 @@
 
 One local browser app and one CPU Docker container for the four-stage paper reconstruction pipeline. The image includes the selected stage packages, interpreters, frozen model assets, contract SDK, configuration and compiled UI. Jobs do not download code or models.
 
-## Multi-piece update (0.2.0)
+## Version 0.2.0 — multi-piece review
 
-This source now integrates Stage 1 **v2.5.0**. One photo may contain zero, one or many pieces. Build and qualify the new image using the source instructions below, then run `docker compose up -d`. See [the migration notes](docs/STAGE1_MULTI_PIECE.md).
+Orchestrator **0.2.0** integrates Stage 1 **v2.5.0**. Each photo or PDF page may contain **zero, one or many pieces**. Review starts with a photo overview: select a piece to inspect and edit its individual outline, add missed pieces, reject false proposals, or split/merge regions. Confirm every photo, including empty photos, then save reviewed crops or continue to page reconstruction.
 
-`compose.release.yaml` prepares the next `0.2.0` registry tag. Building locally does not publish that tag. The previously published `0.1.0` image described below has the older single-piece workflow.
+The image remains self-contained, with all four stages and frozen models included. Stage 2/3/4 sources and algorithms are unchanged in this release. See [the migration notes](docs/STAGE1_MULTI_PIECE.md) and [validation results](docs/VALIDATION_MULTI_PIECE.md).
 
-## Previously published image
+## Run the published image
 
-The self-contained Linux amd64 image is published as `ghcr.io/danielkatzman/orchestrator:0.1.0`. It includes all four stages, frozen models, Python runtimes, dependencies and the compiled GUI. Teammates need Docker with Linux containers and a browser; there are no separate model or source installations. Processing works offline after the image has been downloaded.
+Use the versioned Linux amd64 image **`ghcr.io/danielkatzman/orchestrator:0.2.0`**. It includes all four stages, frozen models, Python runtimes, dependencies and the compiled GUI. Teammates need Docker with Linux containers and a browser; there are no separate model or source installations. Processing works offline after the image has been downloaded. The [v0.2.0 release](https://github.com/DanielKatzman/orchestrator/releases/tag/v0.2.0) records the qualified publication.
 
-For the quickest start, download and extract the [starter ZIP from the v0.1.0 release](https://github.com/DanielKatzman/orchestrator/releases/tag/v0.1.0). It includes `compose.yaml`, startup instructions and four generated sample captures. Run `docker compose pull` and `docker compose up -d` from the extracted folder.
+For the quickest start, download and extract the [starter ZIP from the v0.2.0 release](https://github.com/DanielKatzman/orchestrator/releases/tag/v0.2.0). It includes `compose.yaml`, startup instructions and generated samples for separate-piece photos, multi-piece photos and an empty photo. Run `docker compose pull` and `docker compose up -d` from the extracted folder.
 
-For the previous release, use its versioned [compose.release.yaml](https://github.com/DanielKatzman/orchestrator/blob/v0.1.0/compose.release.yaml), then run:
+Alternatively, download [compose.release.yaml for v0.2.0](https://github.com/DanielKatzman/orchestrator/blob/v0.2.0/compose.release.yaml) into an empty folder, then run:
 
 ```powershell
 docker compose -f compose.release.yaml pull
@@ -24,6 +24,12 @@ docker compose -f compose.release.yaml up -d
 Open **[http://localhost:8000](http://localhost:8000)**. Each computer has its own local instance and persistent `paper-orchestrator-data` volume. Stop it with `docker compose -f compose.release.yaml stop`. Keep the volume to retain jobs and results.
 
 The image currently targets Intel/AMD 64-bit machines; native ARM/Apple Silicon and CUDA are not qualified. The CPU application defaults to four computation threads and one job at a time. There is no container RAM cap in either Compose file; Docker Desktop/WSL determines the available host resources. The Docker image's storage size is separate from its RAM usage.
+
+## Upgrade from 0.1.0
+
+Finish active jobs, keep the original image/digest for historical job recovery, and replace your Compose file with the v0.2.0 version. Pull and start it using the commands above. Keep the existing `paper-orchestrator-data` volume: existing jobs remain viewable and exportable, and new jobs use multi-piece review. Editing or resuming an older incomplete job requires its original application/runtime/composition identity; the new worker skips jobs from older images.
+
+If you use the local source build, run `docker compose up -d --no-build` after qualifying the updated image. Source builds and registry builds have separate validation records; use the original image for jobs that need to resume.
 
 ## Build from source
 
@@ -58,6 +64,8 @@ If the local image has already been built and qualified, only `docker compose up
 `supported` requires complete physical inventory, connected output, valid publication/profile bindings, independent native support and physical checks, and a supported assessment. It is not a calibrated correctness percentage or proof of pixel perfection. Partial/unresolved and runtime failures remain distinct.
 
 The standard page route requires every physical piece. False proposals can be explicitly rejected with history retained. Empty photos are explicitly confirmed and excluded from the physical inventory. Duplicate photos, overlapping masks, disconnected or clipped accepted masks are blocked. Arbitrary perspective, individual resizing, mixed scales and missing-piece reconstruction are outside this release's qualified acquisition profile.
+
+Known upstream limitations in this release: tiny disconnected foreground regions can appear as additional Stage 1 proposals, so inspect and reject false detections during review. Stage 4 can exhaust its solve budget and return separate components even when partial joins were found during search. Improvements to those detection/search behaviors are separate upstream work; 0.2.0 adds the multi-piece orchestration and review workflow.
 
 ## Stages and updates
 

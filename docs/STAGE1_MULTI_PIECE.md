@@ -27,8 +27,8 @@ The upstream manifest schema name is unchanged, but its additive fields require 
 
 ## Upgrade and compatibility
 
-The next application version is `0.2.0`. Stage 1 is pinned to `be0393b0fe72c00bebda8c17f35ccda170b600e3`; Stage 2/3/4 algorithms and model weights are unchanged. All models remain inside the self-contained image. The build qualifies separate-photo, reviewed-mask, multi-photo and confirmed-empty routes offline before promoting the lock/image.
+Application version `0.2.0` pins Stage 1 to `be0393b0fe72c00bebda8c17f35ccda170b600e3`; Stage 2/3/4 algorithms and model weights are unchanged. All models remain inside the self-contained image. The build qualifies separate-photo, reviewed-mask, multi-photo and confirmed-empty routes offline before promoting the lock/image.
 
 The existing SQLite schema and data volume are retained. Historical jobs remain viewable/exportable, including old review corrections. Incomplete jobs from another application/runtime/composition require their original image to resume/edit; the new worker skips them. Keep the old image and persistent volume. This migration does not reinterpret historical single-piece jobs as new multi-piece jobs.
 
-Building locally does not publish a registry image. `compose.release.yaml` and the publishing workflow prepare version `0.2.0`; publishing is a separate release action.
+The [v0.2.0 release](https://github.com/DanielKatzman/orchestrator/releases/tag/v0.2.0) distributes `ghcr.io/danielkatzman/orchestrator:0.2.0` through `compose.release.yaml`. The release workflow runs all four offline controls before publishing the versioned image and `latest`. Building locally does not publish a registry image.

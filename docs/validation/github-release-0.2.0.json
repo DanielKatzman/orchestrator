@@ -1,0 +1,38 @@
+{
+  "version": "0.2.0",
+  "release_url": "https://github.com/DanielKatzman/orchestrator/releases/tag/v0.2.0",
+  "published_at": "2026-11-06T18:45:23Z",
+  "source_tag": "v0.2.0",
+  "tag_commit": "6278413d9690c060cb815d5192b4f2b704b95050",
+  "distribution": "GitHub release ZIP containing the locally qualified Docker image",
+  "asset": {
+    "url": "https://github.com/DanielKatzman/orchestrator/releases/download/v0.2.0/paper-orchestrator-0.2.0.zip",
+    "bytes": 664444184,
+    "sha256": "3792bbaf1925dec243d6c4a3dd26e74f944b93ada85b2a66d5df7814fb69823b",
+    "github_digest": "sha256:3792bbaf1925dec243d6c4a3dd26e74f944b93ada85b2a66d5df7814fb69823b"
+  },
+  "docker_image": {
+    "tag": "paper-orchestrator:0.2.0",
+    "id": "sha256:71f91af78800a0ba8a0ccf2688246e3770039b01455bfdfba7c0b491a42423fb",
+    "archive_sha256": "f02e7238b4c88eff8a8b6cece6c8afcbc24e85844d200f9f67aa01d115ce65e2",
+    "archive_bytes": 664208299,
+    "docker_load_verified_same_image": true
+  },
+  "qualification": {
+    "windows_tests": 38,
+    "linux_tests": 38,
+    "offline_controls": 4,
+    "application_runtime_sha256": "5b1cfc58856d8fdb2b50917a4a315a706b564b1299b72789e24a3d73ad3248ae",
+    "composition_lock_sha256": "02152420a32ffd0571e99ecedf96428c40a3115fef859b80cf5f8a036dc9d522"
+  },
+  "anonymous_download_check": {
+    "anonymous_download_status": 206,
+    "downloaded_bytes": 1024,
+    "zip_header_valid": true,
+    "content_range": "bytes 0-1023/664444184",
+    "content_length": "1024"
+  },
+  "registry_publication": "pending",
+  "github_hosted_qualification": "job did not start; not claimed as a hosted CI pass",
+  "private_run_images_and_evidence_archives_included": false
+}

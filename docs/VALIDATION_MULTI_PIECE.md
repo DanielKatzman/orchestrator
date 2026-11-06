@@ -33,4 +33,12 @@ The original application image is retained under `paper-orchestrator:legacy-befo
 
 ## Scope
 
-This validates multi-piece packaging, review semantics, identities and four-stage interoperability on generated controls. It does not establish segmentation accuracy on unseen real photographs or change Stage 3/4 performance. Source and container changes are local; no `0.2.0` registry release has been published by this work.
+This validates multi-piece packaging, review semantics, identities and four-stage interoperability on generated controls. It does not establish segmentation accuracy on unseen real photographs or change Stage 3/4 performance.
+
+## Published source and image download
+
+The implementation and updated README are pushed to `main`; source tag `v0.2.0` points to `6278413d9690c060cb815d5192b4f2b704b95050`. The [v0.2.0 release](https://github.com/DanielKatzman/orchestrator/releases/tag/v0.2.0) distributes the locally qualified image above as a self-contained ZIP with Compose, generated samples and qualification receipts. No private run photographs or evidence ZIPs are included.
+
+The ZIP is 664,444,184 bytes with SHA-256 `3792bbaf1925dec243d6c4a3dd26e74f944b93ada85b2a66d5df7814fb69823b`. GitHub's full uploaded-asset digest matches that checksum. An anonymous range download returned HTTP 206 and a valid ZIP header. The embedded image archive was loaded successfully and independently checked to retain the exact qualified image ID `sha256:71f91af78800a0ba8a0ccf2688246e3770039b01455bfdfba7c0b491a42423fb`.
+
+Registry publication remains pending. The hosted qualification job did not start, so these results are the existing Windows/Linux local tests and offline image controls, not a claimed hosted-CI pass. Use the release ZIP and `compose.download.yaml` until the registry route is published. See the [release receipt](validation/github-release-0.2.0.json).

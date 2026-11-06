@@ -8,26 +8,26 @@ Orchestrator **0.2.0** integrates Stage 1 **v2.5.0**. Each photo or PDF page may
 
 The image remains self-contained, with all four stages and frozen models included. Stage 2/3/4 sources and algorithms are unchanged in this release. See [the migration notes](docs/STAGE1_MULTI_PIECE.md) and [validation results](docs/VALIDATION_MULTI_PIECE.md).
 
-## Run the published image
+## Run the prebuilt 0.2.0 image
 
-Use the versioned Linux amd64 image **`ghcr.io/danielkatzman/orchestrator:0.2.0`**. It includes all four stages, frozen models, Python runtimes, dependencies and the compiled GUI. Teammates need Docker with Linux containers and a browser; there are no separate model or source installations. Processing works offline after the image has been downloaded. The [v0.2.0 release](https://github.com/DanielKatzman/orchestrator/releases/tag/v0.2.0) records the qualified publication.
+Download the self-contained image ZIP from the **[v0.2.0 release](https://github.com/DanielKatzman/orchestrator/releases/tag/v0.2.0)**. It includes all four stages, frozen models, Python runtimes, dependencies and the compiled GUI. Teammates need Docker with Linux containers and a browser; there are no separate model or source installations. Processing works offline after downloading the ZIP and installing Docker.
 
-For the quickest start, download and extract the [starter ZIP from the v0.2.0 release](https://github.com/DanielKatzman/orchestrator/releases/tag/v0.2.0). It includes `compose.yaml`, startup instructions and generated samples for separate-piece photos, multi-piece photos and an empty photo. Run `docker compose pull` and `docker compose up -d` from the extracted folder.
-
-Alternatively, download [compose.release.yaml for v0.2.0](https://github.com/DanielKatzman/orchestrator/blob/v0.2.0/compose.release.yaml) into an empty folder, then run:
+Extract `paper-orchestrator-0.2.0.zip` and open a terminal in the extracted folder containing `compose.yaml`. The ZIP contains the Docker image archive, startup instructions and generated samples for separate-piece photos, multi-piece photos and an empty photo. Run:
 
 ```powershell
-docker compose -f compose.release.yaml pull
-docker compose -f compose.release.yaml up -d
+docker load -i paper-orchestrator-0.2.0-image.tar.gz
+docker compose up -d
 ```
 
-Open **[http://localhost:8000](http://localhost:8000)**. Each computer has its own local instance and persistent `paper-orchestrator-data` volume. Stop it with `docker compose -f compose.release.yaml stop`. Keep the volume to retain jobs and results.
+Open **[http://localhost:8000](http://localhost:8000)**. Each computer has its own local instance and persistent `paper-orchestrator-data` volume. Stop it with `docker compose stop`. Keep the volume to retain jobs and results. Subsequent starts need only `docker compose up -d`.
+
+The release ZIP uses [compose.download.yaml](compose.download.yaml), which runs the loaded local image `paper-orchestrator:0.2.0` without pulling from a registry. Registry publication of `ghcr.io/danielkatzman/orchestrator:0.2.0` is pending; `compose.release.yaml` prepares that route for when publication is available. The previous registry image `:0.1.0` / `:latest` has the older workflow. Use the v0.2.0 release ZIP for this update.
 
 The image currently targets Intel/AMD 64-bit machines; native ARM/Apple Silicon and CUDA are not qualified. The CPU application defaults to four computation threads and one job at a time. There is no container RAM cap in either Compose file; Docker Desktop/WSL determines the available host resources. The Docker image's storage size is separate from its RAM usage.
 
 ## Upgrade from 0.1.0
 
-Finish active jobs, keep the original image/digest for historical job recovery, and replace your Compose file with the v0.2.0 version. Pull and start it using the commands above. Keep the existing `paper-orchestrator-data` volume: existing jobs remain viewable and exportable, and new jobs use multi-piece review. Editing or resuming an older incomplete job requires its original application/runtime/composition identity; the new worker skips jobs from older images.
+Finish active jobs, keep the original image/digest for historical job recovery, and replace your Compose file with the v0.2.0 download version. Load and start the new image using the commands above. Keep the existing `paper-orchestrator-data` volume: existing jobs remain viewable and exportable, and new jobs use multi-piece review. Editing or resuming an older incomplete job requires its original application/runtime/composition identity; the new worker skips jobs from older images.
 
 If you use the local source build, run `docker compose up -d --no-build` after qualifying the updated image. Source builds and registry builds have separate validation records; use the original image for jobs that need to resume.
 

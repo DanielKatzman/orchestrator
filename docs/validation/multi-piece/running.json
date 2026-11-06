@@ -1,0 +1,39 @@
+{
+  "health": {
+    "status": "ready",
+    "worker": "ready",
+    "lock_sha256": "02152420a32ffd0571e99ecedf96428c40a3115fef859b80cf5f8a036dc9d522"
+  },
+  "application": "0.2.0",
+  "application_sha256": "5b1cfc58856d8fdb2b50917a4a315a706b564b1299b72789e24a3d73ad3248ae",
+  "lock_sha256": "02152420a32ffd0571e99ecedf96428c40a3115fef859b80cf5f8a036dc9d522",
+  "stage1": "be0393b0fe72c00bebda8c17f35ccda170b600e3",
+  "existing_jobs": 6,
+  "historical_read_checks": [
+    {
+      "id": "f4382038eefd437abba64df3fc3136b1",
+      "pieces": 8,
+      "historical": true
+    },
+    {
+      "id": "20318aaa00f84eca94f981ae6c677eb6",
+      "pieces": 4,
+      "historical": true
+    },
+    {
+      "id": "0557affa7a9c46bd81824376558eddbf",
+      "pieces": 6,
+      "historical": true
+    }
+  ],
+  "image": "sha256:71f91af78800a0ba8a0ccf2688246e3770039b01455bfdfba7c0b491a42423fb",
+  "container": "paper-orchestrator-paper-1",
+  "url": "http://localhost:8000",
+  "container_memory_limit_bytes": 0,
+  "unit_tests": {
+    "windows": 38,
+    "linux": 38
+  },
+  "browser_review_verified": true,
+  "source_bundle_matches_running_ui": true
+}

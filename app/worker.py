@@ -212,6 +212,7 @@ class Coordinator:
             )
             inventory = root / "inputs/inventory.json"
             metadata = read(attempt / "attempt.json")
+            expected_count = metadata.get("expected_pieces", request["expected_pieces"])
             if metadata["kind"] == "assembly":
                 evidence = root / "attempts" / f"{metadata['evidence_attempt']:04d}"
                 s1, s3, s4 = (
@@ -233,6 +234,20 @@ class Coordinator:
                     )
             else:
                 if metadata["kind"] == "review":
+                    if metadata.get("review_sha256") != sha(
+                        attempt / "review/decisions.json"
+                    ):
+                        raise ValueError("Frozen review decisions changed")
+                    frozen = read(attempt / "review/decisions.json")
+                    if any(
+                        metadata.get(key) != frozen[key]
+                        for key in (
+                            "expected_pieces",
+                            "reconstruct",
+                            "acquisition_confirmed",
+                        )
+                    ):
+                        raise ValueError("Reviewed reconstruction declaration changed")
                     raw = (
                         root
                         / "attempts"
@@ -271,6 +286,8 @@ class Coordinator:
                         root / "capture_profile.json",
                         "--review",
                         request["review"],
+                        "--piece-mode",
+                        "multi",
                         "--cpu-threads",
                         request["cpu_threads"],
                         "--pdf-dpi",
@@ -279,13 +296,53 @@ class Coordinator:
                     if raw.exists():
                         command.append("--resume")
                     self.command(job, "stage1", "stage1", command, review=True)
-                self.command(
-                    job,
-                    "acceptance",
-                    "stage1",
-                    [io, "gate", "--input", effective, "--inventory", inventory],
-                    review=True,
+                    raise NeedsReview(
+                        "Select and review each detected piece, then confirm every photo or explicitly confirm it empty"
+                    )
+                accepted = json.loads(
+                    self.command(
+                        job,
+                        "acceptance",
+                        "stage1",
+                        [
+                            io,
+                            "gate",
+                            "--input",
+                            effective,
+                            "--inventory",
+                            inventory,
+                            "--expected",
+                            expected_count,
+                        ],
+                        review=True,
+                    )
                 )
+                if not metadata.get("reconstruct", True) or not accepted["pieces"]:
+                    summary = {
+                        "outcome": "segmented" if accepted["pieces"] else "no_pieces",
+                        "pieces": accepted["pieces"],
+                        "sources": accepted["sources"],
+                        "stage1_manifest_sha256": sha(
+                            effective / "segmentation_manifest.jsonl"
+                        ),
+                        "assessment": "not_requested",
+                        "reason_codes": [],
+                        "connected": False,
+                        "joins": 0,
+                    }
+                    atomic(attempt / "summary.json", summary)
+                    self.store.finish(
+                        job["id"],
+                        state="completed",
+                        phase="finished",
+                        outcome=summary["outcome"],
+                        detail=None,
+                    )
+                    return
+                if not metadata.get("acquisition_confirmed"):
+                    raise ValueError(
+                        "Reconstruction requires an explicit complete-page acquisition declaration"
+                    )
                 s1, s2, s3, s4 = [
                     attempt / name for name in ("stage1", "stage2", "stage3", "stage4")
                 ]
@@ -413,6 +470,10 @@ class Coordinator:
                         profile,
                         "--inventory",
                         inventory,
+                        "--stage1",
+                        s1,
+                        "--expected",
+                        expected_count,
                     ],
                 )
             )
@@ -452,7 +513,9 @@ class Coordinator:
                 )
         while not self.stopping.is_set():
             self.store.heartbeat()
-            job = self.store.claim()
+            job = self.store.claim(
+                (self.settings.lock_hash, self.settings.application_hash)
+            )
             if job:
                 self.run(job)
             else:

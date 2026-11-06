@@ -48,6 +48,16 @@ def compatibility(metadata, candidate=False):
     s1, s2, s3, s4 = [metadata[n] for n in ("stage1", "stage2", "stage3", "stage4")]
     if s1["interface"]["manifest_schema"] != "paper-segmentation-manifest-1.0":
         raise ValueError("Unsupported Stage 1 schema")
+    mode = s1["interface"].get("capture_mode_default", "single")
+    if mode not in {"single", "multi"}:
+        raise ValueError("Unsupported Stage 1 capture mode")
+    if mode == "multi" and (
+        version(s1["release_version"])[:2] != (2, 5)
+        or s1["interface"].get("source_inventory") != "segmentation_run.json:sources"
+    ):
+        raise ValueError("Stage 1 needs an unsupported source/piece migration")
+    if s1.get("orchestrator_migration_required") and mode != "multi":
+        raise ValueError("Stage 1 requires an unknown orchestrator migration")
     if (
         s2["interface"]["manifest_schema"] != s3["upstream"]["manifest_schema"]
         or s2["interface"]["piece_schema"] != s3["upstream"]["piece_schema"]
@@ -193,6 +203,16 @@ def resolve(base, selectors, overrides=None, candidate=False):
             ]
             component["component_software_version"] = meta["component_software_version"]
             component["package"]["version"] = meta["release_version"]
+            if name == "stage1":
+                component["interface"] = meta["interface"]
+                component["orchestrator_migration"] = {
+                    "policy": "source-piece-inventory.v2.5",
+                    "supported": True,
+                    "handoff": meta.get("orchestrator_handoff"),
+                    "capture_mode": meta["interface"].get(
+                        "capture_mode_default", "single"
+                    ),
+                }
         elif name == "stage3":
             component["models"] = [
                 {"path": m["path"], "sha256": m["sha256"], "bytes": m["size"]}

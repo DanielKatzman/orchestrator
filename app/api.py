@@ -3,22 +3,46 @@ from __future__ import annotations
 import asyncio
 import json
 import shutil
-import subprocess
 import tempfile
 import uuid
 import zipfile
+from contextlib import contextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile
+from fastapi import (
+    Body,
+    FastAPI,
+    File,
+    Form,
+    Header,
+    HTTPException,
+    Request,
+    UploadFile,
+)
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
+from pydantic import BaseModel, Field
 
 from . import __version__
 from .common import atomic, contained, digest, now, read, rows, sha
 from .config import ROOT, Settings
 from .processes import recover_locks
+from .review import Review, review_lock
 from .store import Store
+
+
+class ReviewAction(BaseModel):
+    revision: str
+    empty: bool = False
+    piece_ids: list[str] = Field(default_factory=list)
+
+
+class ReviewContinuation(BaseModel):
+    revision: str | None = None
+    reconstruct: bool = False
+    acquisition_confirmed: bool = False
+    expected_pieces: int | None = Field(None, ge=0, le=60)
 
 
 def raw_root(settings, job):
@@ -89,6 +113,26 @@ def create_app(settings=None):
     def describe(job):
         attempt = settings.attempt(job)
         inventory = settings.job(job["id"]) / "inputs/inventory.json"
+        piece_inventory = None
+        for candidate in (
+            attempt / "review/state.json",
+            attempt / "review/decisions.json",
+        ):
+            if candidate.is_file():
+                state = read(candidate)
+                if state.get("schema_version") == "orchestrator.instance-review.v2":
+                    active = [
+                        p
+                        for p in state["observations"].values()
+                        if not p["empty_proposal"]
+                        and p["decision"] not in {"rejected", "superseded"}
+                    ]
+                    piece_inventory = {
+                        "sources": len(state["sources"]),
+                        "pieces": len(active),
+                        "approved": sum(p["decision"] == "approved" for p in active),
+                    }
+                    break
         return {
             **job,
             "stages": store.stages(job),
@@ -96,6 +140,11 @@ def create_app(settings=None):
             if (attempt / "summary.json").exists()
             else None,
             "inventory": read(inventory) if inventory.exists() else None,
+            "piece_inventory": piece_inventory,
+            "requires_original_image": (
+                job["request"].get("application_sha256") != settings.application_hash
+                or job["request"]["lock_sha256"] != settings.lock_hash
+            ),
         }
 
     @app.get("/healthz")
@@ -142,17 +191,12 @@ def create_app(settings=None):
     def submit(
         files: list[UploadFile] = File(...),
         name: str = Form("Untitled page"),
-        review: str = Form("flagged"),
+        review: str = Form("all"),
         acquisition_confirmed: bool = Form(False),
         expected_pieces: int = Form(0),
         pdf_dpi: int = Form(300),
         idempotency_key: str | None = Header(None),
     ):
-        if not acquisition_confirmed:
-            raise HTTPException(
-                422,
-                "Confirm one complete page at common native scale, without perspective or resizing",
-            )
         if (
             review not in {"flagged", "all", "none"}
             or not 0 <= expected_pieces <= 60
@@ -163,7 +207,9 @@ def create_app(settings=None):
             not 1 <= len(files) <= settings.max_files
             or not 1 <= len(name.strip()) <= 120
         ):
-            raise HTTPException(422, "Provide 1–60 capture files and a short page name")
+            raise HTTPException(
+                422, "Provide 1ג€“60 capture files and a short page name"
+            )
         job_id = uuid.uuid4().hex
         root = settings.job(job_id)
         originals = root / "inputs/original"
@@ -235,7 +281,8 @@ def create_app(settings=None):
                 "cpu_threads": settings.threads,
                 "lock_sha256": settings.lock_hash,
                 "application_sha256": settings.application_hash,
-                "acquisition_confirmed": True,
+                "acquisition_confirmed": acquisition_confirmed,
+                "piece_mode": "multi",
                 "capture_profile_sha256": sha(
                     ROOT / "composition/profiles/capture.json"
                 ),
@@ -271,22 +318,23 @@ def create_app(settings=None):
 
     @app.post("/api/v1/jobs/{job_id}/cancel")
     def cancel(job_id: str):
-        job = get(job_id)
-        if job["state"] in {"queued", "review_required", "interrupted"}:
-            store.transition(
-                job_id,
-                {job["state"]},
-                "cancelled",
-                cancelled=1,
-                detail="Cancelled by user; artifacts and review drafts were retained",
-            )
-        elif job["state"] in {"running", "cancelling"}:
-            store.transition(
-                job_id, {"running", "cancelling"}, "cancelling", cancelled=1
-            )
-        else:
-            raise HTTPException(409, "This job is already terminal")
-        return describe(get(job_id))
+        with review_lock(job_id):
+            job = get(job_id)
+            if job["state"] in {"queued", "review_required", "interrupted"}:
+                store.transition(
+                    job_id,
+                    {job["state"]},
+                    "cancelled",
+                    cancelled=1,
+                    detail="Cancelled by user; artifacts and review drafts were retained",
+                )
+            elif job["state"] in {"running", "cancelling"}:
+                store.transition(
+                    job_id, {"running", "cancelling"}, "cancelling", cancelled=1
+                )
+            else:
+                raise HTTPException(409, "This job is already terminal")
+            return describe(get(job_id))
 
     @app.post("/api/v1/jobs/{job_id}/resume")
     def resume(job_id: str):
@@ -309,176 +357,276 @@ def create_app(settings=None):
         )
         return describe(get(job_id))
 
+    def review_payload(job):
+        review = Review(settings, job)
+        if review.state is None:
+            return {"revision": "", "sources": [], "pieces": []}
+        root = settings.job(job["id"])
+
+        def url(path):
+            if not Path(path).resolve().is_relative_to(root.resolve()):
+                raise ValueError("Review artifact escapes job")
+            return f"/api/v1/jobs/{job['id']}/artifacts/{artifact_id(root, path)}"
+
+        pieces = []
+        original_ids = {r["capture_id"] for r in rows(review.raw)}
+        published_root = review.folder.parent / "stage1_reviewed"
+        published = {r["capture_id"]: r for r in rows(published_root)}
+        source_order = review.state.get("source_order", list(review.state["sources"]))
+        source_index = {sid: i for i, sid in enumerate(source_order)}
+        for pid, item in sorted(
+            review.state["observations"].items(),
+            key=lambda pair: (
+                source_index[review.source_id(pair[1])],
+                pair[1].get("order", 0),
+                pair[0],
+            ),
+        ):
+            row = item["row"]
+            current = review.mask_path(item)
+            raw_mask = (
+                contained(review.raw, row["mask_path"])
+                if pid in original_ids
+                else current
+            )
+            pieces.append(
+                {
+                    **{
+                        k: row.get(k)
+                        for k in (
+                            "capture_id",
+                            "source_capture_id",
+                            "candidate_id",
+                            "artifact_id",
+                            "reason_codes",
+                            "original_size_hw",
+                            "bbox_xywh",
+                        )
+                    },
+                    "source_capture_id": review.source_id(item),
+                    "accepted": item["decision"] == "approved",
+                    "approved": item["decision"] == "approved",
+                    "decision": item["decision"],
+                    "empty_proposal": item["empty_proposal"],
+                    "origin": item["origin"],
+                    "parents": item["parents"],
+                    "base_sha256": item["sha256"],
+                    "image": url(Path(row["source_path"])),
+                    "mask": url(raw_mask),
+                    "edited_mask": url(current),
+                    "overlay": url(current),
+                }
+            )
+            if pid in published:
+                pieces[-1]["piece"] = url(
+                    contained(published_root, published[pid]["piece_path"])
+                )
+        sources = []
+        inventory = root / "inputs/inventory.json"
+        captures = read(inventory).get("captures", []) if inventory.exists() else []
+        names = {
+            p["sha256"]: p["source_name"]
+            + (f" · page {p['pdf_page']}" if p.get("pdf_page") else "")
+            for p in captures
+        }
+        for sid in source_order:
+            source = review.state["sources"][sid]
+            row = source["row_template"]
+            active = [
+                p
+                for p in pieces
+                if p["source_capture_id"] == sid
+                and p["decision"] not in {"rejected", "superseded"}
+                and not p["empty_proposal"]
+            ]
+            sources.append(
+                {
+                    "source_capture_id": sid,
+                    "source_sha256": source["source_sha256"],
+                    "name": names.get(
+                        source["source_sha256"], Path(row["source_path"]).name
+                    ),
+                    "image": url(Path(row["source_path"])),
+                    "original_size_hw": row["original_size_hw"],
+                    "confirmed": source["confirmed"],
+                    "empty_reviewed": source["empty_reviewed"],
+                    "piece_count": len(active),
+                    "approved_count": sum(p["approved"] for p in active),
+                    "proposal_count": source.get("proposal_count", 0),
+                }
+            )
+        return {"revision": review.revision, "sources": sources, "pieces": pieces}
+
+    @contextmanager
+    def editing(job_id, revision=None, saved=False):
+        with review_lock(job_id):
+            job = get(job_id)
+            if job["state"] != "review_required" and not (
+                saved and job["state"] == "completed" and job["outcome"] == "segmented"
+            ):
+                raise HTTPException(409, "Job is not awaiting review")
+            if (
+                job["request"].get("application_sha256") != settings.application_hash
+                or job["request"]["lock_sha256"] != settings.lock_hash
+            ):
+                raise HTTPException(
+                    409, "Restore the original job image before editing its review"
+                )
+            review = Review(settings, job)
+            if review.state is None:
+                raise HTTPException(409, "Stage 1 proposals are not published yet")
+            review.check_revision(revision)
+            yield job, review
+
+    @app.get("/api/v1/jobs/{job_id}/review")
+    def review_state(job_id: str):
+        with review_lock(job_id):
+            return review_payload(get(job_id))
+
     @app.get("/api/v1/jobs/{job_id}/pieces")
     def pieces(job_id: str):
-        job = get(job_id)
-        source = raw_root(settings, job)
-        root = settings.job(job_id)
-        result = []
-        for row in rows(source):
-            entry = {
-                k: row.get(k)
-                for k in (
-                    "capture_id",
-                    "accepted",
-                    "review_status",
-                    "reason_codes",
-                    "original_size_hw",
-                    "bbox_xywh",
-                )
-            }
-            entry["base_sha256"] = sha(contained(source, row["mask_path"]))
-            for label, path in [
-                ("image", Path(row["source_path"])),
-                ("mask", source / row["mask_path"]),
-                ("overlay", source / row["overlay_path"]),
-            ]:
-                if not path.resolve().is_relative_to(root.resolve()):
-                    raise ValueError("Piece source escapes job")
-                entry[label] = (
-                    f"/api/v1/jobs/{job_id}/artifacts/{artifact_id(root, path)}"
-                )
-            draft = (
-                settings.attempt(job) / "review/drafts" / (row["capture_id"] + ".json")
-            )
-            entry["approved"] = draft.exists()
-            if draft.exists():
-                correction = read(draft)
-                mask_path = settings.attempt(job) / "review" / correction["mask"]
-                entry["edited_mask"] = (
-                    f"/api/v1/jobs/{job_id}/artifacts/{artifact_id(root, mask_path)}"
-                )
-            result.append(entry)
-        return result
+        with review_lock(job_id):
+            return review_payload(get(job_id))["pieces"]
 
     @app.post("/api/v1/jobs/{job_id}/pieces/{capture_id}/review")
     def review_piece(
         job_id: str,
         capture_id: str,
         base_sha256: str = Form(...),
+        revision: str | None = Form(None),
+        decision: str = Form("approved"),
         mask: UploadFile | None = File(None),
     ):
-        job = get(job_id)
-        if job["state"] != "review_required":
-            raise HTTPException(409, "Job is not awaiting review")
-        row = next(
-            (r for r in rows(raw_root(settings, job)) if r["capture_id"] == capture_id),
-            None,
-        )
-        if row is None:
-            raise HTTPException(404, "Unknown piece")
-        original = contained(raw_root(settings, job), row["mask_path"])
-        if base_sha256 != sha(original):
-            raise HTTPException(409, "Mask revision changed; reload it")
-        review_dir = settings.attempt(job) / "review"
-        masks = review_dir / "masks"
-        masks.mkdir(parents=True, exist_ok=True)
-        temporary = masks / (uuid.uuid4().hex + ".png")
         try:
+            payload = mask.file.read(25 * 1024 * 1024 + 1) if mask else None
+            if payload is not None and len(payload) > 25 * 1024 * 1024:
+                raise HTTPException(413, "Correction exceeds 25 MB")
+            with editing(job_id, revision) as (job, review):
+                try:
+                    review.edit(capture_id, base_sha256, payload, decision)
+                except (ValueError, OSError) as error:
+                    raise HTTPException(
+                        422 if "changed" not in str(error) else 409, str(error)
+                    ) from error
+                store.event(
+                    job_id, "review", {"capture_id": capture_id, "decision": decision}
+                )
+                return review_payload(job)
+        finally:
             if mask:
-                payload = mask.file.read(25 * 1024 * 1024 + 1)
-                if len(payload) > 25 * 1024 * 1024:
-                    raise HTTPException(413, "Correction exceeds 25 MB")
-                temporary.write_bytes(payload)
-            else:
-                shutil.copyfile(original, temporary)
-            checked = subprocess.run(
-                [
-                    settings.python("stage1"),
-                    str(ROOT / "tools/stage_io.py"),
-                    "mask",
-                    "--input",
-                    str(temporary),
-                    "--shape",
-                    *map(str, row["original_size_hw"]),
-                ],
-                capture_output=True,
-                text=True,
-                env=settings.environment("stage1"),
-                timeout=45,
-            )
-            if checked.returncode:
-                raise HTTPException(422, (checked.stderr or checked.stdout)[-1000:])
-            checksum = sha(temporary)
-            target = masks / (checksum + ".png")
-            temporary.replace(target)
-            correction = {
-                "capture_id": capture_id,
-                "base_sha256": base_sha256,
-                "sha256": checksum,
-                "mask": target.relative_to(review_dir).as_posix(),
-                "decision": "approved",
-                "at": now(),
-            }
-            atomic(review_dir / "drafts" / (capture_id + ".json"), correction)
+                mask.file.close()
+
+    @app.post("/api/v1/jobs/{job_id}/sources/{source_id}/pieces")
+    def add_piece(job_id: str, source_id: str, action: ReviewAction):
+        with editing(job_id, action.revision) as (job, review):
+            ident = review.add(source_id)
+            review.save("added", {"piece_id": ident})
+            store.event(job_id, "review", {"capture_id": ident, "decision": "added"})
+            return {**review_payload(job), "selected_piece_id": ident}
+
+    @app.post("/api/v1/jobs/{job_id}/sources/{source_id}/confirm")
+    def confirm_source(job_id: str, source_id: str, action: ReviewAction):
+        with editing(job_id, action.revision) as (job, review):
+            review.confirm(source_id, action.empty)
             store.event(
                 job_id,
                 "review",
                 {
-                    "capture_id": capture_id,
-                    "decision": "approved",
-                    "mask_sha256": checksum,
+                    "source_capture_id": source_id,
+                    "decision": "empty_confirmed"
+                    if action.empty
+                    else "source_confirmed",
                 },
             )
-            return correction
-        finally:
-            temporary.unlink(missing_ok=True)
-            if mask:
-                mask.file.close()
+            return review_payload(job)
+
+    @app.post("/api/v1/jobs/{job_id}/pieces/{piece_id}/decision")
+    def decide_piece(job_id: str, piece_id: str, action: ReviewAction, decision: str):
+        with editing(job_id, action.revision) as (job, review):
+            review.decide(piece_id, decision)
+            store.event(
+                job_id, "review", {"capture_id": piece_id, "decision": decision}
+            )
+            return review_payload(job)
+
+    @app.post("/api/v1/jobs/{job_id}/pieces/{piece_id}/split")
+    def split_piece(job_id: str, piece_id: str, action: ReviewAction):
+        with editing(job_id, action.revision) as (job, review):
+            ids = review.split(piece_id)
+            store.event(
+                job_id,
+                "review",
+                {"capture_id": piece_id, "decision": "split", "children": ids},
+            )
+            return {**review_payload(job), "selected_piece_id": ids[0]}
+
+    @app.post("/api/v1/jobs/{job_id}/pieces/merge")
+    def merge_pieces(job_id: str, action: ReviewAction):
+        with editing(job_id, action.revision) as (job, review):
+            ident = review.merge(action.piece_ids)
+            store.event(
+                job_id,
+                "review",
+                {
+                    "capture_id": ident,
+                    "decision": "merged",
+                    "parents": action.piece_ids,
+                },
+            )
+            return {**review_payload(job), "selected_piece_id": ident}
 
     @app.post("/api/v1/jobs/{job_id}/review-revisions")
-    def apply_review(job_id: str):
-        job = get(job_id)
-        if job["state"] != "review_required":
-            raise HTTPException(409, "Job is not awaiting review")
-        previous = settings.attempt(job)
-        review_dir = previous / "review"
-        submitted = (
-            read(review_dir / "decisions.json")
-            if (review_dir / "decisions.json").exists()
-            else {}
-        )
-        submitted.update(
-            {p.stem: read(p) for p in (review_dir / "drafts").glob("*.json")}
-        )
-        values = rows(raw_root(settings, job))
-        if not submitted or any(
-            not row["accepted"] and row["capture_id"] not in submitted for row in values
-        ):
-            raise HTTPException(409, "Approve every pending physical piece first")
-        next_attempt = previous.parent / f"{job['attempt'] + 1:04d}"
-        if next_attempt.exists():
-            raise HTTPException(
-                409,
-                "An unpublished review revision already exists; inspect it before recovery",
-            )
-        target = next_attempt / "review/masks"
-        target.mkdir(parents=True)
-        for correction in submitted.values():
-            source = contained(review_dir, correction["mask"])
-            if sha(source) != correction["sha256"]:
-                raise ValueError("Review draft changed")
-            shutil.copyfile(source, target / source.name)
-        atomic(next_attempt / "review/decisions.json", submitted)
-        raw_attempt = int(raw_root(settings, job).parent.name)
-        atomic(
-            next_attempt / "attempt.json",
-            {
-                "kind": "review",
-                "raw_attempt": raw_attempt,
-                "lock_sha256": settings.lock_hash,
-                "created": now(),
-            },
-        )
-        store.transition(
+    def apply_review(job_id: str, options: ReviewContinuation | None = Body(None)):
+        with editing(
             job_id,
-            {"review_required"},
-            "queued",
-            attempt=job["attempt"] + 1,
-            detail=None,
-            phase=None,
-        )
-        return describe(get(job_id))
+            options.revision if options else None,
+            saved=bool(options and options.reconstruct),
+        ) as (job, review):
+            reconstruct = (
+                options.reconstruct
+                if options
+                else job["request"]["acquisition_confirmed"]
+            )
+            confirmed = (
+                options.acquisition_confirmed
+                if options
+                else job["request"]["acquisition_confirmed"]
+            )
+            previous = settings.attempt(job)
+            target = previous.parent / f"{job['attempt'] + 1:04d}"
+            expected = (
+                options.expected_pieces
+                if options and options.expected_pieces is not None
+                else job["request"]["expected_pieces"]
+            )
+            review.freeze(target, expected, reconstruct, confirmed)
+            atomic(
+                target / "attempt.json",
+                {
+                    "kind": "review",
+                    "raw_attempt": int(raw_root(settings, job).parent.name),
+                    "reconstruct": reconstruct,
+                    "acquisition_confirmed": confirmed,
+                    "lock_sha256": settings.lock_hash,
+                    "review_sha256": sha(target / "review/decisions.json"),
+                    "expected_pieces": expected,
+                    "created": now(),
+                },
+            )
+            try:
+                store.transition(
+                    job_id,
+                    {job["state"]},
+                    "queued",
+                    attempt=job["attempt"] + 1,
+                    detail=None,
+                    phase=None,
+                    outcome=None,
+                )
+            except BaseException:
+                shutil.rmtree(target)
+                raise
+            return describe(get(job_id))
 
     @app.get("/api/v1/jobs/{job_id}/events")
     async def events(job_id: str, request: Request, after: int = 0):
@@ -546,6 +694,9 @@ def create_app(settings=None):
                 "raw_attempt": int(raw_root(settings, job).parent.name),
                 "bundle_sha256": sha(bundle),
                 "capture_sha256": sha(capture),
+                "expected_pieces": metadata.get(
+                    "expected_pieces", job["request"]["expected_pieces"]
+                ),
                 "lock_sha256": settings.lock_hash,
                 "created": now(),
             },

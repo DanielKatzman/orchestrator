@@ -1,5 +1,6 @@
 .git
 .venv
+*.egg-info
 .local
 .build/*
 !.build/candidate.lock.json

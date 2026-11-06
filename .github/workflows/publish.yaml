@@ -38,9 +38,15 @@ jobs:
 
       - name: Run application and compatibility tests
         run: |
-          python3 -m venv "$RUNNER_TEMP/paper-tests"
-          "$RUNNER_TEMP/paper-tests/bin/python" -m pip install -r requirements.txt -e '.[test]'
-          "$RUNNER_TEMP/paper-tests/bin/python" -m pytest -q
+          docker run --rm --mount "type=bind,source=$PWD,target=/workspace" --workdir /workspace \
+            python:3.14.8-slim-bookworm@sha256:44e000a07b48bef1517a2b14adc93c17af728ca98858b5e24c6e1b18de1b2ef2 \
+            sh -eu -c '
+              python -m venv /tmp/paper-tests
+              /tmp/paper-tests/bin/python -m pip install -r requirements.txt -e ".[test]"
+              stage1_commit=$(python -c '\''import json; print(json.load(open("composition/pipeline.lock.json"))["components"]["stage1"]["commit"])'\'')
+              /tmp/paper-tests/bin/python -m pip install --no-deps "https://codeload.github.com/DanielKatzman/paper-segmentation-stage/tar.gz/$stage1_commit"
+              /tmp/paper-tests/bin/python -m pytest -q
+            '
 
       - name: Build and qualify all four real stages offline
         run: bash scripts/build.sh
@@ -58,7 +64,7 @@ jobs:
           docker push "$IMAGE:latest"
           docker buildx imagetools inspect "$IMAGE:$RELEASE_VERSION" > artifacts/registry-image.txt
           {
-            echo "Published \`$IMAGE:$RELEASE_VERSION\` after both offline controls passed."
+            echo "Published \`$IMAGE:$RELEASE_VERSION\` after all offline controls passed."
             echo '```'
             cat artifacts/registry-image.txt
             echo '```'

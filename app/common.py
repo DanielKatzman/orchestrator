@@ -48,12 +48,13 @@ def atomic(path, value):
 
 def contained(root, relative, *, exists=True):
     root = Path(root).resolve()
-    relative = Path(relative)
+    portable = relative.as_posix() if isinstance(relative, Path) else str(relative)
+    relative = Path(portable)
     if (
         relative.is_absolute()
         or ".." in relative.parts
-        or "\\" in str(relative)
-        or ":" in str(relative)
+        or "\\" in portable
+        or ":" in portable
     ):
         raise ValueError("Artifact path must be relative and contained")
     path = (root / relative).resolve()

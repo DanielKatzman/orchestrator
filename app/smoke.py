@@ -44,6 +44,9 @@ def main():
     parser.add_argument("--output", type=Path)
     parser.add_argument("--timeout", type=int, default=1200)
     parser.add_argument("--cancel-stage", choices=["stage3"])
+    parser.add_argument(
+        "--scenario", choices=["separate", "multi", "empty"], default="separate"
+    )
     args = parser.parse_args()
     url = args.url or "http://127.0.0.1:8000"
     supervisor = None
@@ -51,6 +54,7 @@ def main():
     receipt = {
         "started": now(),
         "review": args.review,
+        "scenario": args.scenario,
         "device": "cpu",
         "network": "loopback-only HTTP; no external stage fetch",
     }
@@ -75,13 +79,27 @@ def main():
             raise RuntimeError("Application did not become ready")
         receipt["installed"] = request("/api/v1/system/versions")
         files = sorted((ROOT / "tests/fixtures/captures").glob("*.png"))
+        if args.scenario == "multi":
+            files = sorted((ROOT / "tests/fixtures/multi").glob("*.png"))
+        elif args.scenario == "empty":
+            files = [ROOT / "tests/fixtures/multi/empty.png"]
+        expected = 0 if args.scenario == "empty" else 4
+
+        def post(path, value):
+            return request(
+                path,
+                "POST",
+                json.dumps(value).encode(),
+                {"Content-Type": "application/json"},
+            )
+
         body, headers = multipart(
             {
                 "name": "Four-piece CPU control"
                 + (" · mask review" if args.review == "all" else ""),
                 "acquisition_confirmed": "true",
                 "review": args.review,
-                "expected_pieces": "4",
+                "expected_pieces": str(expected),
             },
             [("files", p) for p in files],
         )
@@ -127,15 +145,24 @@ def main():
                 receipt["cancellation_resume_verified"] = True
                 continue
             if job["state"] == "review_required":
-                if args.review != "all" or reviewed:
+                if reviewed:
                     raise RuntimeError(
                         "Unexpected review gate: " + str(job.get("detail"))
                     )
-                for index, piece in enumerate(
-                    request(f"/api/v1/jobs/{job['id']}/pieces")
-                ):
+                snapshot = request(f"/api/v1/jobs/{job['id']}/review")
+                physical = [p for p in snapshot["pieces"] if not p["empty_proposal"]]
+                assert len(physical) == expected, (
+                    "Real model proposed an unexpected physical inventory"
+                )
+                if args.scenario == "multi":
+                    assert sorted(s["piece_count"] for s in snapshot["sources"]) == [
+                        0,
+                        2,
+                        2,
+                    ]
+                for index, piece in enumerate(physical):
                     uploads = []
-                    if index == 0:
+                    if index == 0 and args.review == "all":
                         # Exercise an actual one-native-pixel correction, not
                         # merely accepting unchanged predictions.
                         import io
@@ -175,12 +202,29 @@ def main():
                         data,
                         head,
                     )
-                request(f"/api/v1/jobs/{job['id']}/review-revisions", "POST")
+                snapshot = request(f"/api/v1/jobs/{job['id']}/review")
+                for source in snapshot["sources"]:
+                    snapshot = post(
+                        f"/api/v1/jobs/{job['id']}/sources/{source['source_capture_id']}/confirm",
+                        {
+                            "revision": snapshot["revision"],
+                            "empty": source["piece_count"] == 0,
+                        },
+                    )
+                post(
+                    f"/api/v1/jobs/{job['id']}/review-revisions",
+                    {
+                        "revision": snapshot["revision"],
+                        "reconstruct": expected > 0,
+                        "acquisition_confirmed": expected > 0,
+                        "expected_pieces": expected,
+                    },
+                )
                 reviewed = True
             elif job["state"] in {"failed", "cancelled", "interrupted"}:
                 raise RuntimeError(f"Pipeline {job['state']}: {job['detail']}")
             elif job["state"] == "completed":
-                if (
+                if expected and (
                     job["outcome"] != "supported"
                     or job["summary"]["pieces"] != 4
                     or not job["summary"]["connected"]
@@ -188,7 +232,11 @@ def main():
                     raise RuntimeError(
                         "The control did not reach supported four-piece connectivity"
                     )
-                if args.review == "all" and (not reviewed or job["attempt"] != 2):
+                if not expected and (
+                    job["outcome"] != "no_pieces" or job["summary"]["pieces"] != 0
+                ):
+                    raise RuntimeError("Confirmed empty photo did not finish safely")
+                if not reviewed or job["attempt"] < 2:
                     raise RuntimeError("Review route was not exercised")
                 receipt.update(
                     status="passed",
@@ -199,7 +247,7 @@ def main():
                     finished=now(),
                 )
                 output = args.output or Settings.load().data / (
-                    "qualification-review.json" if reviewed else "qualification.json"
+                    f"qualification-{args.scenario}-{args.review}.json"
                 )
                 atomic(output, receipt)
                 print(

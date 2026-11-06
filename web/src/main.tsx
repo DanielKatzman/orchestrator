@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
+import { ReviewPanel, type Piece } from "./review";
 
 type Job = {
   id: string;
@@ -16,18 +17,8 @@ type Job = {
   inventory: any;
   stages: any[];
   request: any;
-};
-type Piece = {
-  capture_id: string;
-  accepted: boolean;
-  approved: boolean;
-  base_sha256: string;
-  image: string;
-  mask: string;
-  edited_mask?: string;
-  overlay: string;
-  original_size_hw: number[];
-  reason_codes: string[];
+  piece_inventory?: { sources: number; pieces: number; approved: number };
+  requires_original_image?: boolean;
 };
 type Artifact = { path: string; size: number; url: string };
 const phases = [
@@ -53,6 +44,10 @@ const labels: Record<string, string> = {
   finished: "Finished",
 };
 const readable = (s: string) => s.replaceAll("_", " ");
+const captureCount = (job: Job) =>
+  job.inventory?.captures?.length ??
+  job.inventory?.pieces?.length ??
+  job.request.files.length;
 const date = (s: string) =>
   new Date(s).toLocaleString([], {
     month: "short",
@@ -142,11 +137,13 @@ function MaskEditor({
   jobId,
   onSaved,
   onError,
+  onDirty,
 }: {
   piece: Piece;
   jobId: string;
   onSaved: () => void;
   onError: (s: string) => void;
+  onDirty?: (dirty: boolean) => void;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const state = useRef<any>({});
@@ -241,6 +238,7 @@ function MaskEditor({
       .catch(() => onError("Could not load the native image or mask."));
     return () => {
       cancelled = true;
+      onDirty?.(false);
     };
   }, [piece.capture_id, piece.base_sha256]);
   useEffect(() => {
@@ -263,6 +261,7 @@ function MaskEditor({
   const pushUndo = () => {
     const s = state.current;
     if (!s.mask) return;
+    onDirty?.(true);
     const bytes = s.mask.width * s.mask.height * 4;
     const limit = Math.max(
       1,
@@ -308,7 +307,7 @@ function MaskEditor({
       ((e.clientY - r.top) * c.height) / r.height,
     ];
   };
-  const save = async () => {
+  const save = async (decision = "approved") => {
     setSaving(true);
     try {
       const s = state.current;
@@ -329,12 +328,14 @@ function MaskEditor({
       );
       const form = new FormData();
       form.set("base_sha256", piece.base_sha256);
+      form.set("decision", decision);
       form.set("mask", blob, "mask.png");
       await api(`/jobs/${jobId}/pieces/${piece.capture_id}/review`, {
         method: "POST",
         body: form,
       });
-      onSaved();
+      onDirty?.(false);
+      await onSaved();
     } catch (e: any) {
       onError(e.message);
     } finally {
@@ -457,7 +458,14 @@ function MaskEditor({
           />{" "}
           Mask overlay
         </label>
-        <button className="primary" disabled={!loaded || saving} onClick={save}>
+        <button disabled={!loaded || saving} onClick={() => save("pending")}>
+          Save draft
+        </button>
+        <button
+          className="primary"
+          disabled={!loaded || saving}
+          onClick={() => save("approved")}
+        >
           {saving ? "Checking mask…" : "Approve & save"}{" "}
           <Icon name="check" size={16} />
         </button>
@@ -476,7 +484,7 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [name, setName] = useState("");
-  const [review, setReview] = useState("flagged");
+  const [review, setReview] = useState("all");
   const [confirmed, setConfirmed] = useState(false);
   const [expected, setExpected] = useState("");
   const [pieces, setPieces] = useState<Piece[]>([]);
@@ -720,8 +728,7 @@ function App() {
                       <div className="job-name">
                         <strong>{j.name}</strong>
                         <span>
-                          {j.inventory?.pieces.length || j.request.files.length}{" "}
-                          captures · {date(j.created)}
+                          {captureCount(j)} captures · {date(j.created)}
                         </span>
                       </div>
                       <div className="job-phase">
@@ -772,7 +779,7 @@ function App() {
                 <div>
                   <div className="eyebrow">START WITH YOUR CAPTURES</div>
                   <h1>New reconstruction</h1>
-                  <p>One complete page. One capture for each physical piece.</p>
+                  <p>Find and review every piece across your source photos.</p>
                 </div>
               </div>
               <form onSubmit={upload} className="new-layout">
@@ -864,25 +871,25 @@ function App() {
                         max="60"
                         value={expected}
                         onChange={(e) => setExpected(e.target.value)}
-                        placeholder="Count from files / PDF pages"
+                        placeholder="Unknown — count after detection"
                       />
                     </label>
                   </div>
                   <p className="help">
-                    PDF pages are rendered at 300 DPI. Each page should contain
-                    one piece. Captures are never independently resized.
+                    Each photo or PDF page may contain zero, one or many
+                    separated pieces. PDF pages render at 300 DPI. Native piece
+                    scale is preserved.
                   </p>
                   <label className="declaration">
                     <input
                       type="checkbox"
-                      required
                       checked={confirmed}
                       onChange={(e) => setConfirmed(e.target.checked)}
                     />
                     <span>
-                      I have all pieces from one rectangular page, captured at a
-                      common pixel scale without perspective distortion or
-                      individual resizing.
+                      I already know these captures contain one complete page at
+                      a common native scale. You can also make this declaration
+                      after reviewing the detected pieces.
                     </span>
                   </label>
                   <div className="form-bottom">
@@ -891,9 +898,9 @@ function App() {
                     </span>
                     <button
                       className="primary"
-                      disabled={busy || !files.length || !confirmed}
+                      disabled={busy || !files.length}
                     >
-                      {busy ? "Preparing…" : "Start reconstruction"}{" "}
+                      {busy ? "Preparing…" : "Find pieces"}{" "}
                       <Icon name="arrow" size={16} />
                     </button>
                   </div>
@@ -907,21 +914,24 @@ function App() {
                   </p>
                   <ol>
                     <li>
-                      <strong>One piece per capture</strong>
+                      <strong>Several pieces per photo</strong>
                       <span>
-                        Leave a visible background margin around every edge.
+                        Keep pieces separated, fully visible, with background
+                        around every edge.
                       </span>
                     </li>
                     <li>
                       <strong>Keep every piece</strong>
                       <span>
-                        Upload all pieces from the same complete page.
+                        Confirm every visible piece in each photo. Empty photos
+                        are supported too.
                       </span>
                     </li>
                     <li>
                       <strong>Review when needed</strong>
                       <span>
-                        You can correct the mask before assembly begins.
+                        Select, correct, add or reject individual pieces before
+                        choosing reconstruction.
                       </span>
                     </li>
                   </ol>
@@ -952,18 +962,27 @@ function App() {
                   </div>
                   <h1>{job.name}</h1>
                   <p>
-                    {date(job.created)} ·{" "}
-                    {job.inventory?.pieces.length || job.request.files.length}{" "}
+                    {date(job.created)} · {captureCount(job)} source photos ·{" "}
+                    {job.summary?.pieces ??
+                      job.piece_inventory?.pieces ??
+                      "Detecting"}{" "}
                     pieces · <code>{job.id.slice(0, 8)}</code>
                   </p>
                 </div>
                 <div className="actions">
                   <Badge job={job} />
-                  {job.state === "completed" && (
-                    <button disabled={busy} onClick={() => action(`/jobs/${job.id}/assembly-attempts`)}>
-                      Run assembly again
-                    </button>
-                  )}
+                  {job.state === "completed" &&
+                    !["segmented", "no_pieces"].includes(job.outcome || "") &&
+                    !job.requires_original_image && (
+                      <button
+                        disabled={busy}
+                        onClick={() =>
+                          action(`/jobs/${job.id}/assembly-attempts`)
+                        }
+                      >
+                        Run assembly again
+                      </button>
+                    )}
                   {[
                     "queued",
                     "running",
@@ -1001,7 +1020,9 @@ function App() {
               <div className="stage-track">
                 {phases.map((phase, i) => {
                   const done = job.stages.some(
-                    (s) => s.phase === phase && ["ready", "reused"].includes(s.status),
+                    (s) =>
+                      s.phase === phase &&
+                      ["ready", "reused"].includes(s.status),
                   );
                   return (
                     <div
@@ -1036,188 +1057,208 @@ function App() {
                   <p>{job.detail}</p>
                 </div>
               )}
-              {job.state === "review_required" && (
-                <>
-                  <div className="section-top">
-                    <div>
-                      <h2>Review piece masks</h2>
-                      <p>
-                        Correct the green mask, then approve each pending piece.
-                      </p>
-                    </div>
-                    <button
-                      className="primary"
-                      disabled={
-                        busy || pieces.some((p) => !p.accepted && !p.approved)
-                      }
-                      onClick={() => action(`/jobs/${job.id}/review-revisions`)}
-                    >
-                      Continue with reviewed masks{" "}
-                      <Icon name="arrow" size={16} />
-                    </button>
-                  </div>
-                  <div className="review-layout">
-                    <div className="piece-list">
-                      {pieces.map((p, i) => (
-                        <button
-                          className={pieceId === p.capture_id ? "active" : ""}
-                          key={p.capture_id}
-                          onClick={() => setPieceId(p.capture_id)}
-                        >
-                          <img alt="Predicted piece mask" src={p.overlay} />
-                          <span>
-                            Piece {String(i + 1).padStart(2, "0")}
-                            <small>
-                              {p.approved
-                                ? "Approved"
-                                : p.accepted
-                                  ? "Auto accepted"
-                                  : "Needs review"}
-                            </small>
-                          </span>
-                          {p.approved && <Icon name="check" size={15} />}
-                        </button>
-                      ))}
-                    </div>
-                    <div>
-                      {currentPiece && (
-                        <>
-                          <div className="piece-reasons">
-                            {currentPiece.reason_codes.map((r) => (
-                              <span key={r}>{readable(r.toLowerCase())}</span>
-                            ))}
-                          </div>
-                          <MaskEditor
-                            key={currentPiece.capture_id}
-                            piece={currentPiece}
-                            jobId={job.id}
-                            onSaved={async () => {
-                              await loadDetails();
-                              await refresh();
-                            }}
-                            onError={setError}
-                          />
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-              {job.state !== "review_required" && (
-                <div className="result-grid">
-                  <section className="preview-panel">
-                    {findAsset("stage4/preview.png") ? (
-                      <img
-                        className="assembly-preview"
-                        alt="Published reconstruction preview"
-                        src={findAsset("stage4/preview.png")!.url}
-                      />
-                    ) : (
-                      <div className="working-state">
-                        <div
-                          className={
-                            "working-mark " +
-                            (job.state === "running" ? "spinning" : "")
-                          }
-                        >
-                          <Icon name="layers" size={34} />
-                        </div>
-                        <h2>
-                          {job.state === "running"
-                            ? labels[job.phase || ""] || "Processing page"
-                            : job.state === "queued"
-                              ? "Ready for its turn"
-                              : job.state === "failed"
-                                ? "Execution stopped"
-                                : "No published preview yet"}
-                        </h2>
-                        <p>
-                          {job.state === "running"
-                            ? "The pipeline continues even if you close this page."
-                            : "Stage outputs and diagnostic logs are retained below."}
-                        </p>
-                        {job.state === "running" && (
-                          <span className="live-status">
-                            <i /> Live stage activity
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </section>
-                  <section className="assessment-panel">
-                    <div className="eyebrow">INDEPENDENT ASSESSMENT</div>
-                    <h2>
-                      {job.summary
-                        ? readable(job.summary.outcome)
-                        : "Awaiting publication"}
-                    </h2>
-                    <p>
-                      {job.summary?.outcome === "supported"
-                        ? "All pieces form one connected assembly with verified native support and physical checks."
-                        : "The published assessment determines whether the assembly is supported, partial or unresolved."}
-                    </p>
-                    <dl>
-                      <div>
-                        <dt>Physical pieces</dt>
-                        <dd>
-                          {job.summary?.pieces ||
-                            job.inventory?.pieces.length ||
-                            "—"}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>Selected joins</dt>
-                        <dd>{job.summary?.joins ?? "—"}</dd>
-                      </div>
-                      <div>
-                        <dt>Connected</dt>
-                        <dd>
-                          {job.summary
-                            ? job.summary.connected
-                              ? "Yes"
-                              : "Separate components"
-                            : "—"}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>Termination</dt>
-                        <dd>
-                          {job.summary?.termination
-                            ? readable(job.summary.termination)
-                            : "—"}
-                        </dd>
-                      </div>
-                    </dl>
-                    {job.summary?.reason_codes?.map((r: string) => (
-                      <div className="reason" key={r}>
-                        {readable(r)}
-                      </div>
-                    ))}
-                    <p className="help">
-                      Support is an observable assessment. It does not certify
-                      unique content order or pixel-perfect placement.
-                    </p>
-                    {findAsset("stage4/result.json") && (
-                      <a
-                        className="text-button"
-                        href={findAsset("stage4/result.json")!.url}
-                        target="_blank"
-                      >
-                        View result JSON <Icon name="arrow" size={14} />
-                      </a>
-                    )}
-                    {findAsset("stage4.assessment/report.md") && (
-                      <a
-                        className="text-button"
-                        href={findAsset("stage4.assessment/report.md")!.url}
-                        target="_blank"
-                      >
-                        Assessment report <Icon name="arrow" size={14} />
-                      </a>
-                    )}
-                  </section>
+              {job.state === "review_required" &&
+                !job.requires_original_image && (
+                  <ReviewPanel
+                    key={`${job.id}:${job.attempt}`}
+                    job={job}
+                    api={api}
+                    Editor={MaskEditor}
+                    onChanged={async () => {
+                      await loadDetails();
+                      await refresh();
+                    }}
+                    onError={setError}
+                  />
+                )}
+              {job.requires_original_image && (
+                <div className="notice">
+                  <strong>Historical job</strong>
+                  <p>
+                    Use the original image version to resume or edit this job.
+                    Its files remain available for viewing and export.
+                  </p>
                 </div>
               )}
+              {["segmented", "no_pieces"].includes(job.outcome || "") && (
+                <section className="panel reviewed-output">
+                  <h2>
+                    {job.outcome === "no_pieces"
+                      ? "Empty photos confirmed"
+                      : "Reviewed pieces are ready"}
+                  </h2>
+                  <p>
+                    {job.summary?.sources} source photos · {job.summary?.pieces}{" "}
+                    physical pieces. Your reviewed masks and native crops are
+                    included in the job export.
+                  </p>
+                  <div className="reviewed-piece-grid">
+                    {pieces
+                      .filter((p) => p.approved && !p.empty_proposal)
+                      .map((p, i) => (
+                        <div key={p.capture_id}>
+                          <img
+                            alt={`Reviewed piece ${i + 1}`}
+                            src={p.piece || p.edited_mask || p.mask}
+                          />
+                          <span>Piece {i + 1}</span>
+                        </div>
+                      ))}
+                  </div>
+                  {job.outcome === "segmented" &&
+                    !job.requires_original_image && (
+                      <form
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          setBusy(true);
+                          setError("");
+                          try {
+                            await api(`/jobs/${job.id}/review-revisions`, {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                reconstruct: true,
+                                acquisition_confirmed: true,
+                                expected_pieces: job.summary.pieces,
+                              }),
+                            });
+                            await refresh();
+                            await loadDetails();
+                          } catch (e: any) {
+                            setError(e.message);
+                          } finally {
+                            setBusy(false);
+                          }
+                        }}
+                      >
+                        <label className="check">
+                          <input type="checkbox" required />
+                          These pieces form one complete page, photographed at a
+                          common native scale.
+                        </label>
+                        <button disabled={busy}>
+                          Reconstruct these pieces
+                        </button>
+                      </form>
+                    )}
+                </section>
+              )}
+              {job.state !== "review_required" &&
+                !["segmented", "no_pieces"].includes(job.outcome || "") && (
+                  <div className="result-grid">
+                    <section className="preview-panel">
+                      {findAsset("stage4/preview.png") ? (
+                        <img
+                          className="assembly-preview"
+                          alt="Published reconstruction preview"
+                          src={findAsset("stage4/preview.png")!.url}
+                        />
+                      ) : (
+                        <div className="working-state">
+                          <div
+                            className={
+                              "working-mark " +
+                              (job.state === "running" ? "spinning" : "")
+                            }
+                          >
+                            <Icon name="layers" size={34} />
+                          </div>
+                          <h2>
+                            {job.state === "running"
+                              ? labels[job.phase || ""] || "Processing page"
+                              : job.state === "queued"
+                                ? "Ready for its turn"
+                                : job.state === "failed"
+                                  ? "Execution stopped"
+                                  : "No published preview yet"}
+                          </h2>
+                          <p>
+                            {job.state === "running"
+                              ? "The pipeline continues even if you close this page."
+                              : "Stage outputs and diagnostic logs are retained below."}
+                          </p>
+                          {job.state === "running" && (
+                            <span className="live-status">
+                              <i /> Live stage activity
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </section>
+                    <section className="assessment-panel">
+                      <div className="eyebrow">INDEPENDENT ASSESSMENT</div>
+                      <h2>
+                        {job.summary
+                          ? readable(job.summary.outcome)
+                          : "Awaiting publication"}
+                      </h2>
+                      <p>
+                        {job.summary?.outcome === "supported"
+                          ? "All pieces form one connected assembly with verified native support and physical checks."
+                          : "The published assessment determines whether the assembly is supported, partial or unresolved."}
+                      </p>
+                      <dl>
+                        <div>
+                          <dt>Physical pieces</dt>
+                          <dd>
+                            {job.summary?.pieces ??
+                              job.piece_inventory?.pieces ??
+                              "—"}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Selected joins</dt>
+                          <dd>{job.summary?.joins ?? "—"}</dd>
+                        </div>
+                        <div>
+                          <dt>Connected</dt>
+                          <dd>
+                            {job.summary
+                              ? job.summary.connected
+                                ? "Yes"
+                                : "Separate components"
+                              : "—"}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Termination</dt>
+                          <dd>
+                            {job.summary?.termination
+                              ? readable(job.summary.termination)
+                              : "—"}
+                          </dd>
+                        </div>
+                      </dl>
+                      {job.summary?.reason_codes?.map((r: string) => (
+                        <div className="reason" key={r}>
+                          {readable(r)}
+                        </div>
+                      ))}
+                      <p className="help">
+                        Support is an observable assessment. It does not certify
+                        unique content order or pixel-perfect placement.
+                      </p>
+                      {findAsset("stage4/result.json") && (
+                        <a
+                          className="text-button"
+                          href={findAsset("stage4/result.json")!.url}
+                          target="_blank"
+                        >
+                          View result JSON <Icon name="arrow" size={14} />
+                        </a>
+                      )}
+                      {findAsset("stage4.assessment/report.md") && (
+                        <a
+                          className="text-button"
+                          href={findAsset("stage4.assessment/report.md")!.url}
+                          target="_blank"
+                        >
+                          Assessment report <Icon name="arrow" size={14} />
+                        </a>
+                      )}
+                    </section>
+                  </div>
+                )}
               <section className="diagnostics">
                 <button
                   className="disclosure"

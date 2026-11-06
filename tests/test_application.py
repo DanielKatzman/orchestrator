@@ -59,10 +59,27 @@ def test_submission_freezes_inputs_and_lock(client, configured):
     assert len(client.get(f"/api/v1/jobs/{job['id']}/artifacts").json()) == 5
 
 
-def test_undeclared_acquisition_rejected(client):
+def test_segmentation_does_not_require_complete_page_declaration(client):
     response = submit(client, acquisition_confirmed="false")
-    assert response.status_code == 422
-    assert client.get("/api/v1/jobs").json() == []
+    assert response.status_code == 202
+    assert response.json()["request"]["acquisition_confirmed"] is False
+    assert response.json()["request"]["piece_mode"] == "multi"
+
+
+def test_worker_claim_skips_jobs_from_older_images(configured):
+    store = Store(configured.data)
+    old = store.create(
+        "older", "Older", {"lock_sha256": "older", "application_sha256": "older"}
+    )
+    identity = (configured.lock_hash, configured.application_hash)
+    store.create(
+        "current",
+        "Current",
+        {"lock_sha256": identity[0], "application_sha256": identity[1]},
+    )
+    assert store.claim(identity)["id"] == "current"
+    assert store.claim(identity) is None
+    assert store.get(old["id"])["state"] == "queued"
 
 
 def test_duplicate_piece_is_not_silently_dropped(client):

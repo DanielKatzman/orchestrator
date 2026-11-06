@@ -23,22 +23,27 @@ try {
     $taskImage = "paper-orchestrator:candidate-$taskBuild"
     docker build --platform linux/amd64 --build-arg COMPONENT_LOCK=.build/candidate.lock.json -f docker/Dockerfile -t $taskImage .
     if ($LASTEXITCODE) { throw 'Candidate image build failed; current image was retained' }
-    foreach ($taskReview in @('flagged','all')) {
-        $taskControl = "paper-control-$taskBuild-$taskReview"
+    foreach ($taskCase in @('separate-flagged','separate-all','multi-all','empty-all')) {
+        $taskScenario, $taskReview = $taskCase.Split('-')
+        $taskControl = "paper-control-$taskBuild-$taskCase"
         $taskVolume = "$taskControl-data"
-        $taskSmokeArgs = @('run','--name',$taskControl,'--network','none','--read-only','--tmpfs','/tmp:size=512m,mode=1777','--mount',"type=volume,source=$taskVolume,target=/data",'--entrypoint','/opt/venvs/app/bin/python',$taskImage,'-m','app.smoke','--review',$taskReview)
+        $taskSmokeArgs = @('run','--name',$taskControl,'--network','none','--read-only','--tmpfs','/tmp:size=512m,mode=1777','--mount',"type=volume,source=$taskVolume,target=/data",'--entrypoint','/opt/venvs/app/bin/python',$taskImage,'-m','app.smoke','--review',$taskReview,'--scenario',$taskScenario)
         if ($taskReview -eq 'flagged') { $taskSmokeArgs += @('--cancel-stage','stage3') }
         & docker @taskSmokeArgs
         $taskExit = $LASTEXITCODE
         docker cp "${taskControl}:/data/." "artifacts/$taskControl"
         if ($taskExit) { throw "Integration control failed. Candidate container/data retained: $taskControl" }
+        docker rm $taskControl
+        docker volume rm $taskVolume
     }
     if (Test-Path -LiteralPath 'composition/pipeline.lock.json') {
         Copy-Item -LiteralPath 'composition/pipeline.lock.json' -Destination "artifacts/pipeline.previous-$taskBuild.lock.json"
     }
     docker image inspect $taskImage | Set-Content -LiteralPath "artifacts/image-$taskBuild.json" -Encoding utf8
     Copy-Item -LiteralPath '.build/candidate.lock.json' -Destination 'composition/pipeline.lock.json'
+    docker image inspect paper-orchestrator:local *> $null
+    if ($LASTEXITCODE -eq 0) { docker tag paper-orchestrator:local "paper-orchestrator:previous-$taskBuild" }
     docker tag $taskImage paper-orchestrator:local
     if ($LASTEXITCODE) { throw 'Image promotion failed' }
-    Write-Output 'Both CPU controls passed. Start the application with: docker compose up -d'
+    Write-Output 'All four CPU controls passed. Start the application with: docker compose up -d'
 } finally { Pop-Location }

@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "paper-orchestrator"
-version = "0.1.0"
+version = "0.2.0"
 description = "Local, durable four-stage paper reconstruction application"
 requires-python = ">=3.12"
 dependencies = ["fastapi>=0.115,<1", "uvicorn>=0.30,<1", "python-multipart>=0.0.20", "Pillow>=12,<14", "PyYAML>=6,<7"]
 
 [project.optional-dependencies]
-test = ["pytest>=8", "httpx>=0.28"]
+test = ["pytest>=8", "httpx>=0.28", "numpy>=2,<3", "scipy>=1.14", "PyMuPDF>=1.24"]
 
 [tool.setuptools.packages.find]
 include = ["app*"]

@@ -1,5 +1,6 @@
 {
   "schema_version": "orchestrator.compatibility-catalog.v1",
+  "stage1_migrations": {"2.5": "native-instance-review.v2; independent source inventory, explicit empty confirmations and opaque observation IDs"},
   "qualified_starting_tuple": {
     "stage1": "a0e0fae627f16910065471cf1e829bcb1e2a9685",
     "stage2": "8b095867f1eea7216920196fd36c08a4f57b2820",

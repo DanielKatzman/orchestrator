@@ -121,12 +121,15 @@ class Store:
             )
             self._event(db, job_id, "state", fields)
 
-    def claim(self):
+    def claim(self, identity=None):
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
-            row = db.execute(
-                "SELECT * FROM jobs WHERE state='queued' ORDER BY created LIMIT 1"
-            ).fetchone()
+            query = "SELECT * FROM jobs WHERE state='queued'"
+            values = ()
+            if identity:
+                query += " AND json_extract(request,'$.lock_sha256')=? AND json_extract(request,'$.application_sha256')=?"
+                values = identity
+            row = db.execute(query + " ORDER BY created LIMIT 1", values).fetchone()
             if row is None:
                 return None
             db.execute(

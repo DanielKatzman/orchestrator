@@ -33,7 +33,7 @@ def normalize(source, output, dpi, expected):
             or receipt["pdf_dpi"] != dpi
         ):
             raise ValueError("Input inventory changed")
-        for item in receipt["pieces"]:
+        for item in receipt.get("captures", receipt.get("pieces", [])):
             if sha(contained(output, item["file"])) != item["sha256"]:
                 raise ValueError("Normalized input changed")
         return receipt
@@ -50,7 +50,7 @@ def normalize(source, output, dpi, expected):
             if image.width * image.height > 60_000_000:
                 raise ValueError("A capture exceeds 60 million native pixels")
             if len(inventory) >= 60:
-                raise ValueError("At most 60 pieces per job")
+                raise ValueError("At most 60 source images/PDF pages per job")
             # Decode/EXIF orientation only; native size is never normalized.
             pixels = image.convert("RGB")
             pixel_id = digest(
@@ -64,7 +64,7 @@ def normalize(source, output, dpi, expected):
                     "Duplicate image/page content cannot represent distinct physical pieces"
                 )
             seen.add(pixel_id)
-            name = f"piece_{len(inventory) + 1:04d}.png"
+            name = f"capture_{len(inventory) + 1:04d}.png"
             pixels.save(target / name)
             inventory.append(
                 {
@@ -107,13 +107,13 @@ def normalize(source, output, dpi, expected):
                             "Use a PDF or separate files for multi-frame images"
                         )
                     save(ImageOps.exif_transpose(image), path, None)
-        if not inventory or (expected and len(inventory) != expected):
-            raise ValueError(
-                "Expanded capture count differs from the expected physical inventory"
-            )
+        if not inventory:
+            raise ValueError("Provide at least one source image or PDF page")
         os.replace(target, output)
     receipt = {
-        "pieces": inventory,
+        "schema_version": "orchestrator.capture-inventory.v2",
+        "captures": inventory,
+        "expected_physical_pieces": expected,
         "pdf_dpi": dpi,
         "source": {p.name: sha(p) for p in sorted(source.iterdir()) if p.is_file()},
     }
@@ -121,21 +121,47 @@ def normalize(source, output, dpi, expected):
     return receipt
 
 
-def gate(root, inventory):
+def gate(root, inventory, expected=0):
     from universal_segmenter.release_cli import verify_output
 
     result = verify_output(root)
     values = rows(root)
-    expected = {"capture_" + p["sha256"] for p in read(inventory)["pieces"]}
-    if (
-        {r["capture_id"] for r in values} != expected
-        or len(values) != len(expected)
-        or not result["complete"]
-    ):
-        raise ValueError("Stage 1 did not preserve the complete physical inventory")
-    if not values or not all(r["accepted"] for r in values):
+    inputs = read(inventory)
+    captures = inputs.get("captures", inputs.get("pieces", []))
+    sources = read(Path(root) / "segmentation_run.json").get("sources", [])
+    source_ids = {"capture_" + p["sha256"] for p in captures}
+    ids = {r["capture_id"] for r in values}
+    if not result["complete"] or len(ids) != len(values):
+        raise ValueError(
+            "Stage 1 publication is incomplete or has duplicate observations"
+        )
+    if sources:
+        if {s["source_capture_id"] for s in sources} != source_ids or len(
+            sources
+        ) != len(source_ids):
+            raise ValueError(
+                "Stage 1 source coverage differs from the uploaded captures"
+            )
+        if any(
+            not s.get("review_confirmed")
+            or (not s["observation_ids"] and not s.get("empty_reviewed"))
+            for s in sources
+        ):
+            raise ReviewRequired("Confirm every source photo, including empty photos")
+    elif ids != source_ids:
+        raise ValueError("Stage 1 did not preserve source coverage")
+    if any(r.get("empty_proposal") or not r["accepted"] for r in values):
         raise ReviewRequired("One or more pieces require mask review")
-    return result
+    if len(values) > 60 or (expected and len(values) != expected):
+        raise ValueError(
+            "Reviewed physical-piece count differs from the declared inventory or limit"
+        )
+    return {
+        **result,
+        "status": "ready",
+        "pieces": len(values),
+        "sources": len(captures),
+    }
 
 
 def validate_mask(path, shape):
@@ -175,6 +201,11 @@ def publish_review(raw, decisions, output):
     from universal_segmenter.release_cli import files, verify_output
 
     raw, decisions, output = Path(raw), Path(decisions), Path(output)
+    source_receipt = read(raw / "integration_receipt.json")
+    if source_receipt["artifacts"] != {
+        p: h for p, h in files(raw).items() if p != "integration_receipt.json"
+    }:
+        raise ValueError("Raw Stage 1 publication changed")
     if output.exists():
         receipt = read(output / "review_publication.json")
         actual = {
@@ -185,12 +216,9 @@ def publish_review(raw, decisions, output):
         ):
             raise ValueError("Reviewed publication identity changed")
         return verify_output(output)
-    source_receipt = read(raw / "integration_receipt.json")
-    if source_receipt["artifacts"] != {
-        p: h for p, h in files(raw).items() if p != "integration_receipt.json"
-    }:
-        raise ValueError("Raw Stage 1 publication changed")
     submitted = read(decisions)
+    if submitted.get("schema_version") == "orchestrator.instance-review.v2":
+        return publish_instances(raw, submitted, decisions, output)
     values = rows(raw)
     ids = {r["capture_id"] for r in values}
     if set(submitted) - ids:
@@ -221,7 +249,9 @@ def publish_review(raw, decisions, output):
                 )
                 > 0
             )
-            paths = _materialize(target, row["source_sha256"], rgb, mask)
+            paths = _materialize(
+                target, row.get("artifact_id", row["source_sha256"]), rgb, mask
+            )
             yy, xx = np.nonzero(mask)
             row.update(
                 bbox_xywh=[
@@ -279,6 +309,210 @@ def publish_review(raw, decisions, output):
     return result
 
 
+def publish_instances(raw, submitted, decisions, output):
+    import numpy as np
+    from universal_segmenter.inference.preprocess import load_rgb
+    from universal_segmenter.pipeline.runner import _materialize
+    from universal_segmenter.release_cli import files, verify_output
+
+    if submitted["raw_receipt_sha256"] != sha(raw / "integration_receipt.json"):
+        raise ValueError("Review refers to another raw publication")
+    original = {r["capture_id"]: r for r in rows(raw)}
+    templates = {
+        r.get("source_capture_id", r["capture_id"]): r for r in original.values()
+    }
+    if set(submitted["sources"]) != set(templates):
+        raise ValueError("Reviewed source inventory changed")
+    observations = submitted["observations"]
+    if any(not s["confirmed"] for s in submitted["sources"].values()):
+        raise ValueError("Every source requires explicit confirmation")
+    retained = [
+        (pid, item)
+        for pid, item in observations.items()
+        if not item["empty_proposal"]
+        and item["decision"] not in {"rejected", "superseded"}
+    ]
+    if any(p["decision"] != "approved" for _, p in retained):
+        raise ValueError("Every retained piece requires approval")
+    if len(retained) > 60 or (
+        submitted["expected_pieces"] and len(retained) != submitted["expected_pieces"]
+    ):
+        raise ValueError("Physical piece count differs from the declared inventory")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=output.parent) as folder:
+        target = Path(folder) / "publication"
+        shutil.copytree(raw, target)
+        (target / "integration_receipt.json").rename(
+            target / "raw_stage1_integration_receipt.json"
+        )
+        values, source_rows = [], {sid: [] for sid in templates}
+        cached_source, rgb = None, None
+        for pid, item in sorted(
+            retained,
+            key=lambda pair: (pair[1]["row"].get("source_capture_id", ""), pair[0]),
+        ):
+            supplied = item["row"]
+            sid = supplied.get("source_capture_id", supplied["capture_id"])
+            template = templates.get(sid)
+            if template is None or supplied["capture_id"] != pid:
+                raise ValueError("Piece identity/source differs")
+            for field in ("source_sha256", "source_path", "original_size_hw"):
+                if supplied[field] != template[field]:
+                    raise ValueError("Piece source or native frame changed")
+            row = dict(original.get(pid, template))
+            if pid in original:
+                if item["raw_base_sha256"] != sha(contained(raw, row["mask_path"])):
+                    raise ValueError("Correction uses a stale original mask")
+                if row.get("empty_proposal"):
+                    raise ValueError(
+                        "An empty placeholder cannot become an accepted observation"
+                    )
+            else:
+                if (
+                    item["origin"] not in {"manual", "split", "merge"}
+                    or item["raw_base_sha256"] is not None
+                ):
+                    raise ValueError("A new piece needs explicit creation provenance")
+                if any(
+                    parent not in observations
+                    or observations[parent]["row"].get("source_capture_id") != sid
+                    for parent in item["parents"]
+                ):
+                    raise ValueError("New piece parents refer to a different source")
+                row.update(
+                    capture_id=pid,
+                    source_capture_id=sid,
+                    artifact_id=digest(pid),
+                    candidate_id=supplied["candidate_id"],
+                )
+            row.setdefault("artifact_id", row["source_sha256"])
+            mask_path = contained(decisions.parent, item["mask"])
+            if sha(mask_path) != item["sha256"]:
+                raise ValueError("Reviewed mask changed")
+            mask = validate_mask(mask_path, row["original_size_hw"])
+            if cached_source != sid:
+                image = Path(row["source_path"])
+                if sha(image) != row["source_sha256"]:
+                    raise ValueError("Native source image changed")
+                rgb = load_rgb(image)
+                cached_source = sid
+            artifact = row.get("artifact_id", row["source_sha256"])
+            if not artifact or any(c in artifact for c in ("/", "\\", ":")):
+                raise ValueError("Invalid artifact filename key")
+            paths = _materialize(target, artifact, rgb, mask)
+            yy, xx = np.nonzero(mask)
+            row.update(
+                bbox_xywh=[
+                    int(xx.min()),
+                    int(yy.min()),
+                    int(xx.max() - xx.min() + 1),
+                    int(yy.max() - yy.min() + 1),
+                ],
+                accepted=True,
+                empty_proposal=False,
+                review_status="manually_reviewed",
+                decision_source="manual_review",
+                reason_codes=[],
+                review_origin=item["origin"],
+                parent_observation_ids=item["parents"],
+            )
+            row.update(
+                {
+                    key: paths[value]
+                    for key, value in (
+                        ("mask_path", "mask"),
+                        ("piece_path", "piece"),
+                        ("piece_mask_path", "piece_mask"),
+                        ("overlay_path", "overlay"),
+                    )
+                }
+            )
+            values.append(row)
+            source_rows[sid].append(pid)
+        if len({r["artifact_id"] for r in values}) != len(values):
+            raise ValueError("Piece artifact filename keys collide")
+        (target / "segmentation_manifest.jsonl").write_text(
+            "".join(json.dumps(r, sort_keys=True) + "\n" for r in values), "utf-8"
+        )
+        report = read(raw / "segmentation_run.json")
+        sources = []
+        for sid, source in submitted["sources"].items():
+            if not source_rows[sid] and not source["empty_reviewed"]:
+                raise ValueError("An empty source needs explicit confirmation")
+            sources.append(
+                {
+                    "source_capture_id": sid,
+                    "source_sha256": templates[sid]["source_sha256"],
+                    "observation_ids": source_rows[sid],
+                    "proposal_count": source.get("proposal_count", 0),
+                    "review_confirmed": True,
+                    "empty_reviewed": not source_rows[sid],
+                    "processed": True,
+                }
+            )
+        report.update(
+            capture_mode="multi",
+            complete=True,
+            source_count=len(sources),
+            total_discovered=len(sources),
+            sources=sources,
+            piece_count=len(values),
+            needs_review=0,
+            accepted=len(values),
+            manually_reviewed_this_run=len(values),
+        )
+        atomic(target / "segmentation_run.json", report)
+        profile = read(raw / "capture_profile.json")
+        profile.update(
+            stage1_masks="segformer_v3_reviewed",
+            name="shared-native-scale-reviewed-masks.v1",
+        )
+        atomic(target / "capture_profile.json", profile)
+        atomic(target / "review_history.json", submitted)
+        result = verify_output(
+            target
+        )  # Includes native mask-overlap and crop/alpha verification.
+        if values and result["status"] != "ready":
+            raise ValueError("Reviewed piece publication is incomplete")
+        atomic(
+            target / "review_publication.json",
+            {
+                "schema_version": "orchestrator.review-publication.v2",
+                "policy": "native-instance-review.v2",
+                "raw_receipt_sha256": sha(raw / "integration_receipt.json"),
+                "decisions_sha256": sha(decisions),
+                "publisher_sha256": sha(Path(__file__)),
+                "artifacts": files(target),
+            },
+        )
+        os.replace(target, output)
+    return {**result, "status": "ready", "pieces": len(values)}
+
+
+def split_mask(path, shape, output):
+    import numpy as np
+    from PIL import Image
+    from scipy import ndimage
+
+    with Image.open(path) as image:
+        value = np.asarray(image.convert("L"))
+    if list(value.shape) != list(shape) or not np.isin(value, [0, 255]).all():
+        raise ValueError("Split requires a native binary mask")
+    labels, count = ndimage.label(value > 0, np.ones((3, 3), bool))
+    if not 2 <= count <= 60:
+        raise ValueError(
+            "Erase the bridge and save a draft containing 2–60 separate regions before splitting"
+        )
+    output.mkdir(parents=True)
+    result = []
+    for number in range(1, count + 1):
+        name = f"part_{number:04d}.png"
+        Image.fromarray((labels == number).astype(np.uint8) * 255).save(output / name)
+        validate_mask(output / name, shape)
+        result.append(name)
+    return {"masks": result}
+
+
 def boundary(source, output):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "composition/adapter"))
     from prepare_stage1_for_stage2 import prepare
@@ -315,7 +549,16 @@ def boundary(source, output):
     return receipt
 
 
-def verify4(root, bundle, capture, config_path, profile_path, inventory):
+def verify4(
+    root,
+    bundle,
+    capture,
+    config_path,
+    profile_path,
+    inventory,
+    stage1=None,
+    expected_count=0,
+):
     from paper_reconstruction_contracts import load_bundle
     from paper_reconstruction_stage4.assessment import verify_package
     from paper_reconstruction_stage4.config import SolverConfig
@@ -347,7 +590,21 @@ def verify4(root, bundle, capture, config_path, profile_path, inventory):
         or result["input"]["manifest_sha256"] != evidence.manifest["manifest_sha256"]
     ):
         raise ValueError("Result/assessment/evidence/profile binding differs")
-    expected = {"capture_" + p["sha256"] for p in read(inventory)["pieces"]}
+    if stage1:
+        accepted = rows(stage1)
+        if any(not p["accepted"] or p.get("empty_proposal") for p in accepted):
+            raise ValueError(
+                "Only accepted physical observations may enter reconstruction"
+            )
+        expected = {p["capture_id"] for p in accepted}
+        if len(expected) != len(accepted) or (
+            expected_count and len(expected) != expected_count
+        ):
+            raise ValueError("Accepted physical inventory differs")
+    else:
+        expected = {"capture_" + p["sha256"] for p in read(inventory)["pieces"]}
+    if set(evidence.manifest["pieces"]) != expected:
+        raise ValueError("Stage 3 evidence differs from accepted physical inventory")
     layout = result["layouts"][0]
     if {p["piece_id"] for p in layout["pieces"]} != expected or len(
         layout["pieces"]
@@ -389,7 +646,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "command",
-        choices=["normalize", "gate", "boundary", "review", "mask", "verify4"],
+        choices=["normalize", "gate", "boundary", "review", "mask", "split", "verify4"],
     )
     for name in [
         "input",
@@ -400,6 +657,7 @@ def main():
         "capture",
         "config",
         "profile",
+        "stage1",
     ]:
         parser.add_argument("--" + name, type=Path)
     parser.add_argument("--dpi", type=int, default=300)
@@ -410,7 +668,7 @@ def main():
         if args.command == "normalize":
             result = normalize(args.input, args.output, args.dpi, args.expected)
         elif args.command == "gate":
-            result = gate(args.input, args.inventory)
+            result = gate(args.input, args.inventory, args.expected)
         elif args.command == "boundary":
             result = boundary(args.input, args.output)
         elif args.command == "review":
@@ -418,6 +676,8 @@ def main():
         elif args.command == "mask":
             validate_mask(args.input, args.shape)
             result = {"valid": True}
+        elif args.command == "split":
+            result = split_mask(args.input, args.shape, args.output)
         else:
             result = verify4(
                 args.input,
@@ -426,6 +686,8 @@ def main():
                 args.config,
                 args.profile,
                 args.inventory,
+                args.stage1,
+                args.expected,
             )
         print(json.dumps(result, allow_nan=False))
         return 0

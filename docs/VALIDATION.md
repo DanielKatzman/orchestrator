@@ -1,5 +1,7 @@
 # Implementation validation — 28 October 2026
 
+The later Stage 1 v2.5.0 migration is documented separately in [Multi-piece integration validation](VALIDATION_MULTI_PIECE.md). Results below describe the original application release.
+
 The local implementation was tested on Windows Docker Desktop's Linux amd64 engine. The final selected sources are the exact four commits in `composition/pipeline.lock.json`; Stage 1/2 remain explicit v2 integration-PR pins. No upstream code was modified, no model was trained, and no GitHub repository was created or published.
 
 ## Final image controls

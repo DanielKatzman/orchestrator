@@ -17,11 +17,32 @@
   },
   "components": {
     "stage1": {
-      "commit": "a0e0fae627f16910065471cf1e829bcb1e2a9685",
+      "commit": "be0393b0fe72c00bebda8c17f35ccda170b600e3",
       "compatibility_snapshot": "components/stage1/compatibility.json",
-      "component_software_version": "1.0.0",
+      "component_software_version": "2.5.0",
       "constraints_snapshot": "components/stage1/constraints.txt",
-      "distribution_version": "2.0.0",
+      "distribution_version": "2.5.0",
+      "interface": {
+        "capture_mode_default": "multi",
+        "command": "paper-stage1",
+        "commands": [
+          "run",
+          "inspect",
+          "verify"
+        ],
+        "exit_codes": {
+          "failed": 2,
+          "interrupted": 130,
+          "ready": 0,
+          "review_required": 3
+        },
+        "legacy_mode_option": "--piece-mode single",
+        "manifest_schema": "paper-segmentation-manifest-1.0",
+        "piece_identity": "capture_id identifies an individual observation; source_capture_id identifies its input photo",
+        "progress_stream": "stderr",
+        "result_stream": "stdout JSON",
+        "source_inventory": "segmentation_run.json:sources"
+      },
       "models": [
         {
           "bytes": 56820510,
@@ -29,22 +50,25 @@
           "sha256": "cbd43f3f305d44c811d70f1ab604c7dbef9d5ddb2eecd9fd0dbe3f52e3345417"
         }
       ],
+      "orchestrator_migration": {
+        "capture_mode": "multi",
+        "handoff": "docs/ORCHESTRATOR_HANDOFF_V2_5.md",
+        "policy": "source-piece-inventory.v2.5",
+        "supported": true
+      },
       "package": {
         "name": "paper-segmentation-stage",
         "source_subdirectory": ".",
-        "version": "2.0.0"
+        "version": "2.5.0"
       },
       "publication": {
-        "kind": "draft_pull_request",
-        "merged": false,
-        "state": "open",
-        "url": "https://github.com/DanielKatzman/paper-segmentation-stage/pull/1",
-        "v2_tag_published": false
+        "kind": "candidate_tag",
+        "url": "https://github.com/DanielKatzman/paper-segmentation-stage/tree/v2.5.0"
       },
-      "reference": "codex/v2-integration",
+      "reference": "v2.5.0",
       "repository": "https://github.com/DanielKatzman/paper-segmentation-stage",
       "runtime_group": "stage12",
-      "source_readme": "https://github.com/DanielKatzman/paper-segmentation-stage/blob/a0e0fae627f16910065471cf1e829bcb1e2a9685/README.md"
+      "source_readme": "https://github.com/DanielKatzman/paper-segmentation-stage/blob/be0393b0fe72c00bebda8c17f35ccda170b600e3/README.md"
     },
     "stage2": {
       "commit": "8b095867f1eea7216920196fd36c08a4f57b2820",
